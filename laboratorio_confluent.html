@@ -100,6 +100,7 @@
   .note.warn { border-left-color: var(--yellow-30); background: #fcf4d6; }
   .note.danger { border-left-color: var(--red-60); background: #fff1f1; }
   .note.tip { border-left-color: var(--green-50); background: #defbe6; }
+  .note.theory { border-left-color: #8a3ffc; background: #f6f2ff; }
   .note p:last-child { margin-bottom: 0; }
 
   /* Tablas */
@@ -238,11 +239,11 @@
 
   <div class="group">Sección 2</div>
   <a class="top" href="#s2">Consultar datos con Flink SQL</a>
-  <a href="#s2-p1">Paso 1: Crear workspace Flink</a>
-  <a href="#s2-p2">Paso 2: Ejecutar sentencias SQL</a>
-  <a href="#s2-p3">Paso 3: Enmascarar un campo</a>
-  <a href="#s2-p4">Paso 4: Ver Stream Lineage</a>
-  <a href="#s2-p5">Paso 5: Eliminar recursos</a>
+  <a href="#s2-p1">Paso 1: Configurar Schema Registry</a>
+  <a href="#s2-p3">Paso 2: Abrir el editor SQL</a>
+  <a href="#s2-p3x">Paso 3: Ejecutar sentencias SQL</a>
+  <a href="#s2-p4">Paso 4: Enmascarar un campo</a>
+  <a href="#s2-p5">Paso 5: Verificar users_mask</a>
 
   <div class="group">Más información</div>
   <a href="#relacionado">Contenido relacionado</a>
@@ -334,7 +335,14 @@
 
   <!-- Paso 2 -->
   <h3 id="s1-p2"><span class="step-tag">Paso 2</span> Crear un tópico Kafka</h3>
-  <p>En este paso creas un tópico Kafka llamado <code>users</code> desde la consola. Un tópico es una unidad de organización dentro de un clúster y es, esencialmente, un log de solo escritura al final (<em>append-only</em>). Para más información sobre tópicos, consulta «What is Apache Kafka».</p>
+
+  <div class="note theory">
+    <span class="label">¿Qué es un tópico?</span>
+    <p>Un <strong>tópico</strong> es un log ordenado e inmutable de mensajes. Los productores escriben al final y los consumidores leen desde cualquier posición usando un <em>offset</em>. Se divide en <strong>particiones</strong> para paralelizar la carga entre brokers, y cada partición puede replicarse para garantizar durabilidad. Los mensajes llevan una clave, un valor y metadatos; la clave determina en qué partición se escribe.</p>
+    <p><a href="https://docs.confluent.io/kafka/introduction.html#topics" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
+  <p>En este paso creas un tópico llamado <code>users</code> desde la consola.</p>
 
   <div class="code-label">Consola web</div>
   <ol class="steps">
@@ -363,7 +371,14 @@
 
   <!-- Paso 3 -->
   <h3 id="s1-p3"><span class="step-tag">Paso 3</span> Registrar el esquema del tópico</h3>
-  <p><strong>Schema Registry</strong> es la base de Stream Governance. Guarda el esquema de los datos de cada tópico para mantenerlos consistentes y compatibles a medida que evolucionan las aplicaciones. En este paso registras a mano el esquema Avro del valor de los mensajes del tópico <code>users</code>, antes de producir datos.</p>
+
+  <div class="note theory">
+    <span class="label">¿Qué es Schema Registry?</span>
+    <p><strong>Schema Registry</strong> almacena y versiona los esquemas de los mensajes de Kafka. Garantiza que productores y consumidores acuerden el formato de los datos, y aplica reglas de <strong>compatibilidad</strong> (<em>backward</em>, <em>forward</em>) para que los cambios de esquema no rompan las aplicaciones existentes. Soporta los formatos <strong>Avro</strong>, <strong>Protobuf</strong> y <strong>JSON Schema</strong>. En este laboratorio usamos Avro.</p>
+    <p><a href="https://docs.confluent.io/platform/current/schema-registry/index.html" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
+  <p>En este paso registras a mano el esquema Avro del tópico <code>users</code> antes de producir datos.</p>
 
   <div class="code-label">Consola web</div>
   <ol class="steps">
@@ -402,7 +417,14 @@
 
   <!-- Paso 4 -->
   <h3 id="s1-p4"><span class="step-tag">Paso 4</span> Crear un productor de ejemplo</h3>
-  <p>Un <strong>conector</strong> es un componente enchufable que transmite datos hacia o desde Kafka. Este paso usa el conector <strong>Datagen Source</strong>, que genera datos simulados, para producir datos de ejemplo hacia tu clúster Kafka. El conector se configura para serializar los mensajes con el esquema que registraste en el paso anterior.</p>
+
+  <div class="note theory">
+    <span class="label">¿Qué es un productor?</span>
+    <p>Un <strong>productor</strong> es cualquier aplicación que escribe mensajes en un tópico de Kafka. En este laboratorio el rol del productor lo cumple <strong>Kafka Connect</strong>, un framework de integración con sistemas externos. Los <em>source connectors</em> traen datos hacia Kafka y los <em>sink connectors</em> los sacan. El conector <strong>Datagen Source</strong> que usamos genera datos de ejemplo de forma automática.</p>
+    <p><a href="https://docs.confluent.io/kafka/introduction.html#producers" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
+  <p>Un <strong>conector</strong> es un componente enchufable que transmite datos hacia o desde Kafka. Este paso usa el conector <strong>Datagen Source</strong> para producir datos de ejemplo hacia el tópico <code>users</code>, serializados con el esquema que registraste en el paso anterior.</p>
 
   <div class="note">
     <span class="label">Conectores nativos de Confluent Cloud</span>
@@ -523,55 +545,118 @@
 
   <!-- ===================== SECCIÓN 2 ===================== -->
   <h2 id="s2">Sección 2: Consultar datos de streaming con Flink SQL</h2>
-  <p>En esta sección creas un workspace de Flink y escribes consultas sobre el tópico <code>users</code> y otros datos de streaming. En la Sección 1 instalaste un conector Datagen que produjo estos datos hacia el tópico <code>users</code> de tu clúster.</p>
+
+  <div class="note theory">
+    <span class="label">¿Qué es Apache Flink?</span>
+    <p><strong>Apache Flink®</strong> es un motor de procesamiento distribuido para datos en tiempo real. A diferencia de los sistemas por lotes, Flink trata los datos como un <strong>stream continuo</strong> y procesa cada evento a medida que llega, con latencias muy bajas. Permite ejecutar transformaciones, agregaciones y joins sobre flujos de datos usando una API en Java/Python o directamente con <strong>Flink SQL</strong>, una sintaxis SQL estándar enriquecida con operadores de streaming como ventanas temporales.</p>
+    <p>En Confluent, Flink está integrado con Kafka: los tópicos se exponen como <strong>tablas</strong> sobre las que se pueden hacer consultas SQL. Una consulta <code>SELECT</code> devuelve resultados continuos a medida que llegan mensajes nuevos; un <code>INSERT INTO</code> materializa el resultado en otro tópico.</p>
+    <p><a href="https://docs.confluent.io/platform/current/flink/overview.html" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
+  <p>En esta sección escribes consultas Flink SQL sobre el tópico <code>users</code> que creaste en la Sección 1.</p>
 
   <!-- Paso 1 -->
-  <h3 id="s2-p1"><span class="step-tag">Paso 1</span> Crear un workspace de Flink</h3>
-  <p>Un workspace de Flink es un editor SQL interactivo para escribir y ejecutar consultas sobre datos de streaming. Crea uno nuevo para comenzar.</p>
+  <h3 id="s2-p1"><span class="step-tag">Paso 1</span> Configurar las credenciales de Schema Registry en el catálogo</h3>
+  <p>Por defecto el catálogo <code>flink-catalog</code> apunta a Schema Registry sin credenciales de autenticación. Sin este paso, cualquier query sobre una tabla con esquema Avro falla con <em>Permission denied to access the Schema Registry</em>.</p>
+
+  <div class="code-label">Consola web</div>
   <ol class="steps">
-    <li>Navega a la página <strong>SQL Workspaces</strong>: en el menú de navegación, haz clic en <strong>Stream processing</strong>.</li>
-    <li>En el desplegable, selecciona el entorno donde creaste el tópico <code>users</code> y el conector Datagen Source.</li>
-    <li>Haz clic en <strong>Create workspace</strong>.</li>
+    <li>En el menú principal, andá a <strong>Flink → Catalogs</strong>. Hacé clic en <strong>Edit</strong> (o en el nombre) del catálogo <code>flink-catalog</code>.</li>
   </ol>
-
-  <div class="note tip">
-    <span class="label">Sugerencia</span>
-    <p>Para experimentar con flujos de datos de ejemplo provistos por Flink, haz clic en <strong>Try example</strong> para abrir un workspace con consultas de ejemplo que puedes ejecutar de inmediato.</p>
-  </div>
-
-  <p>Se abre un nuevo workspace con una consulta de ejemplo en el editor de código (o <em>celda</em>).</p>
 
   <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: workspace de Flink</strong><span>Editor SQL con la consulta de ejemplo.</span><code>img/10-flink-workspace.png</code></div>
-    <img src="img/10-flink-workspace.png" alt="Workspace de Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+    <div class="ph"><div class="icon"></div><strong>Captura: edición del catálogo flink-catalog</strong><span>Pantalla de edición con el campo Schema Registry configuration.</span><code>img/10f-flink-catalog-edit.png</code></div>
+    <img src="img/10f-flink-catalog-edit.png" alt="Edición del catálogo flink-catalog" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
   </figure>
 
-  <p>En segundo plano, Flink crea un <strong>compute pool</strong>, que representa los recursos de cómputo usados para ejecutar tus sentencias SQL.</p>
-  <div class="note">
-    <span class="label">Nota</span>
-    <p>El aprovisionamiento del compute pool puede tardar uno o dos minutos. El estado se muestra en la parte superior derecha del workspace.</p>
+  <ol class="steps" start="2" style="counter-reset: s 1;">
+    <li>En el campo <strong>Schema Registry configuration</strong>, reemplazá el JSON existente por el siguiente, con tu contraseña real en lugar de <code>&lt;password&gt;</code>:</li>
+  </ol>
+
+<pre data-download="flink-catalog-sr.json">{
+  <span class="str">"schema.registry.url"</span>: <span class="str">"http://schemaregistry.confluent.svc.cluster.local:8081"</span>,
+  <span class="str">"schema.registry.basic.auth.credentials.source"</span>: <span class="str">"USER_INFO"</span>,
+  <span class="str">"schema.registry.basic.auth.user.info"</span>: <span class="str">"admin:&lt;password&gt;"</span>
+}</pre>
+
+  <div class="note warn">
+    <span class="label">Importante</span>
+    <p>Reemplazá <code>&lt;password&gt;</code> por la contraseña del usuario <code>admin</code> antes de hacer clic en <strong>Update catalog</strong>. La URL interna <code>http://schemaregistry.confluent.svc.cluster.local:8081</code> es la correcta para este entorno; no uses la IP externa.</p>
   </div>
 
-  <!-- Paso 2 -->
-  <h3 id="s2-p2"><span class="step-tag">Paso 2</span> Ejecutar sentencias Flink SQL</h3>
-  <p>El compute pool está listo para ejecutar consultas cuando su estado cambia de <em>Provisioning</em> a <em>Running</em>.</p>
-  <ol class="steps">
-    <li>Haz clic en <strong>Run</strong> para enviar la consulta de ejemplo.</li>
+  <ol class="steps" start="3" style="counter-reset: s 2;">
+    <li>Hacé clic en <strong>Update catalog</strong> para guardar los cambios.</li>
   </ol>
-  <p>La sentencia de ejemplo se envía y se muestra información sobre ella, incluyendo su estado y un identificador único. Haz clic en el enlace del nombre de la sentencia para abrir su vista de detalle, que muestra el estado y otra información. Haz clic en <strong>X</strong> para cerrar la vista de detalle.</p>
-  <p>Tras un período de inicialización, los resultados de la consulta se muestran debajo de la celda. La salida debería ser similar a:</p>
-<pre class="out">EXPR$0
-0
-1
-2</pre>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: edición del catálogo flink-catalog</strong><span>JSON con las credenciales de Schema Registry.</span><code>img/10f-flink-catalog-edit.png</code></div>
+    <img src="img/10g-updatecatalog.png" alt="Edición del catálogo flink-catalog" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 2 → id s2-p3, numerado "Paso 3" porque Paso 2 estaba en la renumeración anterior -->
+  <h3 id="s2-p3"><span class="step-tag">Paso 2</span> Abrir el editor SQL de Flink</h3>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li>En el menú principal, haz clic en <strong>Flink</strong> y luego en <strong>Environments</strong>. Selecciona el entorno <code>flink-env</code>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: sección Flink y entorno</strong><span>Menú Flink y entorno <code>flink-env</code>.</span><code>img/10a-flink-menu.png</code></div>
+    <img src="img/10a-flink-menu.png" alt="Sección Flink y entorno flink-env" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
 
   <ol class="steps" start="2" style="counter-reset: s 1;">
-    <li>Borra la consulta anterior de la celda y ejecuta la siguiente consulta para inspeccionar el stream <code>users</code>.</li>
+    <li>En el menú lateral, haz clic en <strong>Compute Pools</strong> y verificá que <code>flink-compute-pool</code> está en estado <em>Running</em>.</li>
   </ol>
-  <p>Flink registra tablas automáticamente sobre tus tópicos Kafka, y tu consulta se ejecuta sobre la tabla <code>users</code> con los datos de streaming del tópico subyacente.</p>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: Compute Pool en estado Running</strong><span>Pool <code>flink-compute-pool</code> con estado <em>Running</em>.</span><code>img/10c-compute-running.png</code></div>
+    <img src="img/10c-compute-running.png" alt="Compute pool flink-compute-pool en estado Running" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="3" style="counter-reset: s 2;">
+    <li>En el menú lateral, haz clic en <strong>Statements</strong> y luego en <strong>Add statement</strong> para abrir el editor SQL.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: editor SQL de Flink</strong><span>Editor SQL listo para recibir consultas.</span><code>img/10d-flink-editor.png</code></div>
+    <img src="img/10d-flink-editor.png" alt="Editor SQL de Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="4" style="counter-reset: s 3;">
+    <li>En el editor, seleccioná los siguientes valores en los dropdowns superiores antes de ejecutar cualquier query:</li>
+  </ol>
+
+  <table>
+    <thead><tr><th>Dropdown</th><th>Valor</th></tr></thead>
+    <tbody>
+      <tr><td>Compute pool</td><td><code>flink-compute-pool</code></td></tr>
+      <tr><td>Catalog</td><td><code>flink-catalog</code></td></tr>
+      <tr><td>Database</td><td><code>flink-database</code></td></tr>
+    </tbody>
+  </table>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: dropdowns del editor SQL</strong><span>Compute pool, Catalog y Database seleccionados.</span><code>img/10e-flink-dropdowns.png</code></div>
+    <img src="img/10e-flink-dropdowns.png" alt="Dropdowns del editor SQL de Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 3 -->
+  <h3 id="s2-p3x"><span class="step-tag">Paso 3</span> Ejecutar sentencias Flink SQL</h3>
+  <p>Con el catálogo configurado, ya podés ejecutar consultas sobre los tópicos Kafka. Los tópicos que tienen un esquema registrado en Schema Registry se exponen automáticamente como tablas Flink.</p>
+  <ol class="steps">
+    <li>Ejecutá la siguiente consulta para ver los mensajes del tópico <code>users</code> en tiempo real.</li>
+  </ol>
+  <p>La tabla <code>users</code> corresponde al tópico que creaste en la Sección 1. Flink la reconoce porque tiene un esquema Avro registrado en Schema Registry.</p>
 
   <div class="code-label">Flink SQL</div>
 <pre><span class="kw">SELECT</span> * <span class="kw">FROM</span> users;</pre>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: resultado de <code>SELECT * FROM users;</code></strong><span>Filas de la tabla users en tiempo real.</span><code>img/11-flink-select-users.png</code></div>
+    <img src="img/11-flink-select-users.png" alt="Resultado de SELECT * FROM users" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
 
   <p>La salida debería ser similar a:</p>
 <pre class="out">key             registertime  userid regionid gender
@@ -590,10 +675,9 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
     <img src="img/11-flink-select-users.png" alt="Resultado de SELECT * FROM users" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
   </figure>
 
-  <!-- Paso 3 -->
-  <h3 id="s2-p3"><span class="step-tag">Paso 3</span> Enmascarar un campo</h3>
-  <p>Con un compute pool de Flink en ejecución, puedes correr consultas SQL sobre tus datos de streaming.</p>
-  <p>En este paso ejecutas una sentencia Flink SQL para ocultar información personal en el stream <code>users</code> y publicar los datos depurados en un nuevo tópico Kafka llamado <code>users_mask</code>.</p>
+  <!-- Paso 4 -->
+  <h3 id="s2-p4"><span class="step-tag">Paso 4</span> Enmascarar un campo</h3>
+  <p>En este paso creás una nueva tabla <code>users_mask</code> y ejecutás una sentencia persistente que copia los datos de <code>users</code> enmascarando el campo <code>gender</code>. La sentencia corre de forma continua y crea automáticamente un nuevo tópico Kafka con los datos transformados.</p>
 
   <ol class="steps">
     <li>Ejecuta la siguiente sentencia para crear una nueva tabla Flink basada en la tabla <code>users</code>.
@@ -654,56 +738,25 @@ x'557365725f34' 1505592707164 User_4 Region_2 *****
     <img src="img/12-flink-users-mask.png" alt="Resultado de SELECT * FROM users_mask" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
   </figure>
 
-  <!-- Paso 4 -->
-  <h3 id="s2-p4"><span class="step-tag">Paso 4</span> Ver el Stream Lineage</h3>
-  <p>Tus sentencias Flink SQL son recursos al igual que los tópicos y conectores, por lo que puedes verlas en Stream Lineage.</p>
-  <ol class="steps">
-    <li>En tu workspace, abre el navegador de catálogo y expande tu entorno, clúster y <strong>Tables</strong> para encontrar el tópico <code>users_mask</code>.</li>
-    <li>Pasa el cursor sobre el tópico <code>users_mask</code> y haz clic en <strong>View topic details</strong>.</li>
-  </ol>
-
-  <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: vista de navegación en el workspace de Flink</strong><span>Catálogo con la tabla <code>users_mask</code>.</span><code>img/13-flink-navigation.png</code></div>
-    <img src="img/13-flink-navigation.png" alt="Vista de navegación en el workspace de Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
-  </figure>
-
-  <ol class="steps" start="3" style="counter-reset: s 2;">
-    <li>En el panel de detalle del tópico, bajo <strong>Lineage</strong>, haz clic en <strong>View full lineage</strong>.</li>
-  </ol>
-
-  <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: Stream Lineage del pipeline de Flink</strong><span>Conector → users → Flink → users_mask.</span><code>img/14-stream-lineage-flink.png</code></div>
-    <img src="img/14-stream-lineage-flink.png" alt="Stream Lineage del pipeline de Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
-  </figure>
-
-  <ol class="steps" start="4" style="counter-reset: s 3;">
-    <li>Pasa el cursor sobre los nodos del diagrama de Stream Lineage para ver detalles del flujo de datos.</li>
-  </ol>
-
   <!-- Paso 5 -->
-  <h3 id="s2-p5"><span class="step-tag">Paso 5</span> Eliminar recursos</h3>
-  <p>Al terminar el laboratorio, elimina los recursos que creaste para evitar cargos inesperados en tu cuenta.</p>
+  <h3 id="s2-p5"><span class="step-tag">Paso 5</span> Verificar el tópico <code>users_mask</code></h3>
+  <p>La sentencia <code>INSERT INTO</code> del paso anterior crea automáticamente el tópico <code>users_mask</code> en Kafka y escribe en él los datos transformados de forma continua. Verificá que el tópico existe y está recibiendo mensajes.</p>
 
   <div class="code-label">Consola web</div>
-  <h4>Eliminar la consulta persistente</h4>
   <ol class="steps">
-    <li>Navega a la página de detalle de tu entorno y haz clic en <strong>Flink</strong>.</li>
-    <li>En la lista de sentencias, busca la que tenga estado <em>Running</em>.</li>
-    <li>Marca la casilla de la sentencia, haz clic en <strong>Actions</strong> y selecciona <strong>Delete statement</strong>.</li>
-    <li>En el diálogo <strong>Confirm statement deletion</strong>, escribe <code>DELETE</code> y haz clic en <strong>Confirm</strong>.</li>
+    <li>En el menú de navegación de Control Center, seleccioná <strong>Topics</strong>. Verificá que <code>users_mask</code> aparece en la lista.</li>
+    <li>Hacé clic en <code>users_mask</code> y abrí la pestaña <strong>Messages</strong> para ver los mensajes con el campo <code>gender</code> enmascarado.</li>
   </ol>
-  <h4>Eliminar el conector</h4>
-  <ol class="steps">
-    <li>En el menú de navegación, selecciona <strong>Connect</strong> y haz clic en el clúster <code>connect</code>.</li>
-    <li>Haz clic en <code>DatagenSourceConnector_users</code> y elige la pestaña <strong>Settings</strong>.</li>
-    <li>Haz clic en <strong>Delete connector</strong>, ingresa el nombre del conector (<code>DatagenSourceConnector_users</code>) y haz clic en <strong>Confirm</strong>.</li>
-  </ol>
-  <h4>Eliminar los tópicos</h4>
-  <ol class="steps">
-    <li>En el menú de navegación, haz clic en <strong>Topics</strong>, selecciona el tópico <code>users</code> y elige la pestaña <strong>Settings</strong>.</li>
-    <li>Haz clic en <strong>Delete topic</strong>, ingresa el nombre del tópico (<code>users</code>) y haz clic en <strong>Continue</strong>.</li>
-    <li>Repite estos pasos con el tópico <code>users_mask</code>.</li>
-  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: tópico users_mask en Topics</strong><span>Mensajes con el campo gender enmascarado.</span><code>img/13-users-mask-messages.png</code></div>
+    <img src="img/13-users-mask-messages.png" alt="Mensajes del tópico users_mask" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <div class="note">
+    <span class="label">Nota</span>
+    <p>El tópico <code>users_mask</code> seguirá recibiendo mensajes mientras la sentencia <code>INSERT INTO</code> esté en ejecución en el editor de Flink.</p>
+  </div>
 
   <!-- ===================== RELACIONADO ===================== -->
   <h2 id="relacionado">Contenido relacionado</h2>
