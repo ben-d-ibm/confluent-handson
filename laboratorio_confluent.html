@@ -298,7 +298,7 @@
       <li>Esta guía rápida te pone en marcha con Confluent usando un clúster Kafka básico.</li>
       <li>La primera sección muestra cómo crear tópicos, y producir y consumir datos hacia y desde el clúster.</li>
       <li>La segunda sección te guía en el uso de Apache Flink® para ejecutar consultas sobre los datos usando sintaxis SQL.</li>
-      <li>Los flujos de trabajo asumen que ya cuentas con un entorno funcional que incluye un paquete de Stream Governance. Para conocer más sobre los paquetes de Stream Governance, sus características y la configuración del entorno, consulta la documentación de Confluent.</li>
+      <li>Los flujos de trabajo asumen que ya cuentas con un entorno de Confluent Platform funcionando, con Kafka, Schema Registry, Connect, ksqlDB y Flink ya instalados y disponibles.</li>
       <li>Confluent ofrece una interfaz web, una interfaz de línea de comandos local y APIs REST para administrar tus entornos y recursos.</li>
     </ul>
   </section>
@@ -306,10 +306,14 @@
   <section id="prerrequisitos">
     <h3>Prerrequisitos</h3>
     <ul>
-      <li>Acceso a Confluent (para comenzar gratis, consulta la prueba gratuita de Confluent Cloud).</li>
-      <li>Conectividad a Internet.</li>
-      <li>Paquete de Stream Governance.</li>
+      <li>Acceso al entorno de Confluent Platform provisto para este laboratorio (IP de la VM y contraseña del usuario <code>admin</code>).</li>
+      <li>Un navegador web moderno con acceso a la IP de la VM.</li>
+      <li>El archivo <code>datagen-users-connector.json</code> disponible en este laboratorio (ver Paso 4 de la Sección 1).</li>
     </ul>
+    <div class="note">
+      <span class="label">Sobre el «paquete de Stream Governance»</span>
+      <p>La guía original de Confluent Cloud requería un paquete de <strong>Stream Governance</strong> para usar Schema Registry. En Confluent Platform, Schema Registry está incluido en la instalación y no requiere ningún paquete adicional.</p>
+    </div>
   </section>
 
   <!-- ===================== SECCIÓN 1 ===================== -->
