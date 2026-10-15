@@ -121,11 +121,16 @@
   .code-wrap pre { margin: 0; max-width: none; padding-right: 3.5rem; }
   .code-wrap pre[data-download] { padding-right: 6rem; }
   .copy-btn.dl-btn { right: 3rem; }
+  .copy-btn.dl-btn.has-creds { color: #42be65; }
+  .copy-btn.dl-btn.has-creds::after {
+    content: ''; position: absolute; top: .35rem; right: .35rem;
+    width: 7px; height: 7px; border-radius: 50%; background: #42be65; border: 1px solid #262626;
+  }
   dialog.dl-dialog { border: 0; padding: 0; width: min(28rem, calc(100vw - 2rem)); background: var(--layer-01, #fff); color: var(--text); box-shadow: 0 2px 6px rgba(0,0,0,.3); }
   dialog.dl-dialog::backdrop { background: rgba(22,22,22,.6); }
   .dl-dialog form { padding: 1.5rem; }
   .dl-dialog h3 { margin: 0 0 .5rem; font-size: 20px; font-weight: 400; }
-  .dl-dialog p { font-size: 14px; color: var(--text-secondary, #525252); margin: 0 0 1.25rem; }
+  .dl-dialog p { font-size: 14px; color: var(--text-secondary, #525252); margin: 0 0 1.25rem; max-width: none; }
   .dl-dialog label { display: block; font-size: 12px; letter-spacing: .32px; color: var(--text-secondary, #525252); margin-bottom: .5rem; }
   .dl-dialog input { display: block; width: 100%; height: 2.5rem; padding: 0 1rem; margin-bottom: 1.25rem; font: 14px var(--font-sans); color: var(--text); background: var(--layer, #f4f4f4); border: 0; border-bottom: 1px solid #8d8d8d; }
   .dl-dialog input:focus { outline: 2px solid var(--blue-60, #0f62fe); outline-offset: -2px; }
@@ -672,9 +677,9 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
 <dialog class="dl-dialog" id="dl-dialog" aria-labelledby="dl-title">
   <form>
     <h3 id="dl-title">Personalizar archivo</h3>
-    <p>Ingresa los datos de tu entorno. Se insertan en el archivo descargado, en tu navegador; no se envían a ningún servidor.</p>
+    <p>Ingresá los datos de tu entorno. Quedan guardados en esta pestaña — los archivos siguientes se descargan sin pedirlos de nuevo.</p>
     <label for="dl-ip">IP o hostname de la VM</label>
-    <input id="dl-ip" type="text" required pattern="[A-Za-z0-9.\-]+(:[0-9]+)?" placeholder="Ej.: 10.0.0.15" autocomplete="off" spellcheck="false">
+    <input id="dl-ip" type="text" required pattern="[A-Za-z0-9.\-]+(:[0-9]+)?" placeholder="Ej.: 163.66.81.55" autocomplete="off" spellcheck="false">
     <label for="dl-pw">Contraseña del usuario admin</label>
     <input id="dl-pw" type="password" required autocomplete="off">
     <div class="dl-actions">
@@ -730,8 +735,25 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
   var dlForm = dlDialog.querySelector('form');
   var dlIp = document.getElementById('dl-ip');
   var dlPw = document.getElementById('dl-pw');
-  dlDialog.querySelector('.dl-cancel').addEventListener('click', function () { dlForm.reset(); dlDialog.close(); });
-  dlDialog.addEventListener('close', function () { dlForm.reset(); });
+
+  // Credenciales recordadas durante la sesión
+  var savedIp = '';
+  var savedPw = '';
+
+  var dlBtns = []; // todos los botones de descarga, para actualizar su estado visual
+
+  function updateDlBtns() {
+    dlBtns.forEach(function (b) {
+      if (savedIp && savedPw) b.classList.add('has-creds');
+      else b.classList.remove('has-creds');
+      b.title = (savedIp && savedPw)
+        ? 'Descargar con ' + savedIp + ' (clic derecho → Cambiar datos)'
+        : b._baseName;
+    });
+  }
+
+  dlDialog.querySelector('.dl-cancel').addEventListener('click', function () { dlDialog.close(); });
+  // NO reseteamos al cerrar — conservamos los valores para la próxima descarga
 
   function saveFile(text, name) {
     var blob = new Blob([text + '\n'], { type: 'application/json' });
@@ -785,24 +807,65 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
       dl.title = 'Descargar ' + pre.dataset.download;
       dl.setAttribute('aria-label', 'Descargar ' + pre.dataset.download);
       wrap.appendChild(dl);
-      dl.addEventListener('click', function () {
+      dl._baseName = 'Descargar ' + pre.dataset.download;
+      dl.title = dl._baseName;
+      dlBtns.push(dl);
+
+      function doDownload(forceName) {
         var text = pre.textContent;
+        var esc = function (s) { return JSON.stringify(s).slice(1, -1); };
+        saveFile(text.split('<ip>').join(esc(savedIp)).split('<password>').join(esc(savedPw)), forceName || pre.dataset.download);
+      }
+
+      function openModal() {
+        var text = pre.textContent;
+        dlIp.value = savedIp;
+        dlPw.value = savedPw;
+        dlDialog.showModal();
+        (savedIp ? dlPw : dlIp).focus();
+        dlForm.onsubmit = function (e) {
+          e.preventDefault();
+          savedIp = dlIp.value.trim();
+          savedPw = dlPw.value;
+          doDownload();
+          updateDlBtns();
+          dlDialog.close();
+        };
+      }
+
+      dl.addEventListener('click', function (e) {
+        var text = pre.textContent;
+        var esc = function (s) { return JSON.stringify(s).slice(1, -1); };
+
+        // Sin marcadores: descarga directa siempre
         if (text.indexOf('<ip>') === -1 && text.indexOf('<password>') === -1) {
           saveFile(text, pre.dataset.download);
           return;
         }
-        dlForm.reset();
-        dlDialog.showModal();
-        dlIp.focus();
-        dlForm.onsubmit = function (e) {
+
+        // Ctrl+clic o clic sobre botón con credenciales ya guardadas: forzar modal para cambiar datos
+        if (e.ctrlKey || e.metaKey || (savedIp && savedPw && e.shiftKey)) {
+          openModal();
+          return;
+        }
+
+        // Credenciales ya guardadas: descarga directa
+        if (savedIp && savedPw) {
+          doDownload();
+          return;
+        }
+
+        // Primera vez: mostrar modal
+        openModal();
+      });
+
+      // Clic derecho → contextmenu: abrir modal para cambiar datos
+      dl.addEventListener('contextmenu', function (e) {
+        var text = pre.textContent;
+        if (text.indexOf('<ip>') !== -1 || text.indexOf('<password>') !== -1) {
           e.preventDefault();
-          var ip = dlIp.value.trim();
-          var pw = dlPw.value;
-          var esc = function (s) { return JSON.stringify(s).slice(1, -1); };
-          saveFile(text.split('<ip>').join(esc(ip)).split('<password>').join(esc(pw)), pre.dataset.download);
-          dlForm.reset();
-          dlDialog.close();
-        };
+          openModal();
+        }
       });
     }
 
