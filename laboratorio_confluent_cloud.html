@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio Hands-On: Inicio rápido con Confluent Cloud</title>
+<style>
+  /* ---------- Tokens estilo IBM Carbon (tema White) ---------- */
+  :root {
+    --bg: #ffffff;
+    --layer: #f4f4f4;
+    --layer-hover: #e8e8e8;
+    --border: #e0e0e0;
+    --border-strong: #8d8d8d;
+    --text: #161616;
+    --text-secondary: #525252;
+    --text-helper: #6f6f6f;
+    --blue-60: #0f62fe;
+    --blue-70: #0043ce;
+    --gray-100: #161616;
+    --gray-90: #262626;
+    --gray-80: #393939;
+    --green-50: #24a148;
+    --yellow-30: #f1c21b;
+    --red-60: #da1e28;
+    --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --header-h: 48px;
+    --nav-w: 16rem;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-sans); font-size: 16px; line-height: 1.5; letter-spacing: 0;
+  }
+
+  /* ---------- UI Shell: header ---------- */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+    background: var(--gray-100); color: #f4f4f4; display: flex; align-items: center;
+    z-index: 100; border-bottom: 1px solid var(--gray-80);
+  }
+  .header .brand { padding: 0 1rem; font-size: 14px; letter-spacing: .16px; white-space: nowrap; }
+  .header .brand strong { font-weight: 600; }
+  .header .sep { width: 1px; height: 24px; background: var(--gray-80); }
+  .header .title { padding: 0 1rem; font-size: 14px; color: #c6c6c6; }
+
+  /* ---------- Side nav ---------- */
+  .sidenav {
+    position: fixed; top: var(--header-h); bottom: 0; left: 0; width: var(--nav-w);
+    background: var(--bg); border-right: 1px solid var(--border); overflow-y: auto; padding: 1rem 0;
+  }
+  .sidenav .group { padding: .75rem 1rem .25rem; font-size: 12px; color: var(--text-helper); text-transform: uppercase; letter-spacing: .32px; }
+  .sidenav a {
+    display: block; padding: .5rem 1rem .5rem 1.5rem; font-size: 14px; color: var(--text-secondary);
+    text-decoration: none; border-left: 3px solid transparent; line-height: 1.25;
+  }
+  .sidenav a:hover { background: var(--layer-hover); color: var(--text); }
+  .sidenav a.top { padding-left: 1rem; color: var(--text); font-weight: 600; }
+
+  /* ---------- Contenido ---------- */
+  main { margin-left: var(--nav-w); padding: calc(var(--header-h) + 2rem) 3rem 4rem; max-width: calc(72rem + var(--nav-w)); }
+  .breadcrumb { font-size: 14px; color: var(--text-helper); margin-bottom: 1rem; }
+  h1 { font-size: 42px; font-weight: 300; line-height: 1.19; margin: 0 0 1rem; }
+  h2 { font-size: 32px; font-weight: 400; line-height: 1.25; margin: 4rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-strong); }
+  h3 { font-size: 20px; font-weight: 600; line-height: 1.4; margin: 2.5rem 0 .75rem; display: flex; align-items: center; gap: .75rem; }
+  h4 { font-size: 16px; font-weight: 600; margin: 1.5rem 0 .5rem; }
+  p { margin: 0 0 1rem; max-width: 46rem; }
+  .lead { font-size: 20px; line-height: 1.4; color: var(--text-secondary); max-width: 46rem; }
+  a { color: var(--blue-60); }
+  a:hover { color: var(--blue-70); }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; max-width: 46rem; }
+  li { margin-bottom: .5rem; }
+  code {
+    font-family: var(--font-mono); font-size: 14px; background: var(--layer); padding: 1px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Etiqueta de paso */
+  .step-tag {
+    display: inline-block; background: var(--blue-60); color: #fff; font-size: 12px; font-weight: 600;
+    padding: 2px 10px; border-radius: 24px; letter-spacing: .32px;
+  }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 24px; background: #d0e2ff; color: #002d9c; margin-right: .5rem; }
+  .tag.gray { background: #e0e0e0; color: #161616; }
+  .tag.green { background: #a7f0ba; color: #044317; }
+
+  /* Pasos numerados estilo Carbon */
+  ol.steps { list-style: none; counter-reset: s; padding-left: 0; }
+  ol.steps > li { counter-increment: s; position: relative; padding-left: 2.5rem; margin-bottom: .875rem; }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: 0; width: 1.5rem; height: 1.5rem;
+    border: 1px solid var(--border-strong); border-radius: 50%; font-size: 12px; text-align: center; line-height: 1.4rem; color: var(--text-secondary);
+  }
+
+  /* Notificaciones inline */
+  .note { max-width: 46rem; margin: 1rem 0 1.5rem; padding: .75rem 1rem .75rem 1rem; background: var(--layer); border-left: 3px solid var(--blue-60); font-size: 14px; }
+  .note .label { display: block; font-weight: 600; margin-bottom: .25rem; }
+  .note.warn { border-left-color: var(--yellow-30); background: #fcf4d6; }
+  .note.danger { border-left-color: var(--red-60); background: #fff1f1; }
+  .note.tip { border-left-color: var(--green-50); background: #defbe6; }
+  .note.theory { border-left-color: #8a3ffc; background: #f6f2ff; }
+  .note p:last-child { margin-bottom: 0; }
+
+  /* Tablas */
+  table { border-collapse: collapse; width: 100%; max-width: 46rem; margin: 0 0 1.5rem; font-size: 14px; }
+  thead th { background: #e0e0e0; text-align: left; padding: .75rem 1rem; font-weight: 600; }
+  tbody td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); background: var(--layer); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: var(--bg); }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+
+  /* Bloques de código (Gray 100) */
+  pre {
+    background: var(--gray-90); color: #f4f4f4; font-family: var(--font-mono); font-size: 14px; line-height: 1.5;
+    padding: 1rem 1.25rem; overflow-x: auto; margin: 0 0 1.5rem; max-width: 46rem; border-left: 3px solid var(--blue-60);
+  }
+  pre.out { background: var(--layer); color: var(--text); border-left-color: var(--border-strong); }
+  .code-label { font-size: 12px; color: var(--text-helper); letter-spacing: .32px; text-transform: uppercase; margin-bottom: .25rem; }
+  .code-wrap { position: relative; max-width: 46rem; margin: 0 0 1.5rem; }
+  .code-wrap pre { margin: 0; max-width: none; padding-right: 3.5rem; }
+  .copy-btn {
+    position: absolute; top: .5rem; right: .5rem; display: inline-flex; align-items: center; justify-content: center;
+    width: 2rem; height: 2rem; padding: 0; background: #393939; color: #f4f4f4; border: 0; cursor: pointer;
+  }
+  .copy-btn svg { width: 16px; height: 16px; fill: currentColor; display: block; }
+  .copy-btn:hover { background: #4c4c4c; }
+  .copy-btn:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+  .copy-btn.copied { color: #42be65; }
+  .copy-btn.failed { color: #fa4d56; }
+  .kw { color: #78a9ff; } .str { color: #42be65; } .cm { color: #8d8d8d; }
+
+  /* ---------- Marcador de captura de pantalla ---------- */
+  figure.shot { margin: 1.5rem 0 2rem; max-width: 100%; display: grid; position: relative; }
+  figure.shot .ph { max-width: 46rem; }
+  figure.shot img { cursor: zoom-in; }
+  .zoom-btn {
+    display: none; position: absolute; top: .5rem; right: .5rem; width: 2.5rem; height: 2.5rem; padding: 0;
+    background: var(--gray-100); border: 0; cursor: pointer; align-items: center; justify-content: center;
+  }
+  .zoom-btn:hover { background: var(--gray-80); }
+  .zoom-btn:focus-visible { outline: 2px solid var(--blue-60); outline-offset: 2px; }
+  figure.shot.has-img .zoom-btn { display: flex; }
+
+  /* Lightbox */
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 200; background: rgba(22,22,22,.92);
+    overflow: auto; padding: 3.5rem 1.5rem 1.5rem; cursor: zoom-out;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { margin: auto; max-width: 100%; max-height: calc(100vh - 5rem); background: #fff; cursor: zoom-in; }
+  .lightbox.full img { max-width: none; max-height: none; cursor: zoom-out; margin: 0 auto auto; }
+  .lightbox .lb-close {
+    position: fixed; top: .75rem; right: 1rem; width: 2.5rem; height: 2.5rem; background: var(--gray-80); color: #fff;
+    border: 0; font-size: 24px; line-height: 1; cursor: pointer;
+  }
+  .lightbox .lb-close:hover { background: #4c4c4c; }
+  .lightbox .lb-hint { position: fixed; top: 1.1rem; left: 1.5rem; color: #c6c6c6; font-size: 12px; }
+  figure.shot .ph, figure.shot img { grid-area: 1 / 1; }
+  figure.shot .ph {
+    min-height: 260px; border: 2px dashed var(--border-strong); background: var(--layer);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem;
+    text-align: center; padding: 1.5rem; color: var(--text-secondary); font-size: 14px;
+  }
+  figure.shot .ph .icon {
+    width: 40px; height: 32px; border: 2px solid var(--border-strong); position: relative; margin-bottom: .25rem;
+  }
+  figure.shot .ph .icon::after {
+    content: ""; position: absolute; left: 6px; bottom: 5px; width: 0; height: 0;
+    border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 12px solid var(--border-strong);
+  }
+  figure.shot .ph .icon::before {
+    content: ""; position: absolute; right: 6px; top: 5px; width: 6px; height: 6px; background: var(--border-strong); border-radius: 50%;
+  }
+  figure.shot .ph strong { color: var(--text); font-size: 14px; }
+  figure.shot .ph code { background: var(--bg); }
+  figure.shot img { width: 100%; height: auto; display: block; background: #fff; border: 1px solid var(--border); position: relative; }
+  figure.shot figcaption { font-size: 12px; color: var(--text-helper); margin-top: .5rem; }
+
+  .related a { display: block; padding: .75rem 0; border-bottom: 1px solid var(--border); text-decoration: none; max-width: 46rem; }
+  .related a:hover { background: var(--layer); }
+
+  footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-helper); }
+
+  @media (max-width: 900px) {
+    .sidenav { display: none; }
+    main { margin-left: 0; padding: calc(var(--header-h) + 1.5rem) 1.25rem 3rem; }
+    h1 { font-size: 32px; }
+  }
+  @media print { .header, .sidenav { display: none; } main { margin: 0; padding: 0; } figure.shot { break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">IBM&nbsp;<strong>Laboratorio Hands-On</strong></div>
+  <div class="sep"></div>
+  <div class="title">Confluent Cloud &middot; Inicio rápido</div>
+</header>
+
+<nav class="sidenav" aria-label="Contenido">
+  <a class="top" href="#intro">Introducción</a>
+  <a href="#home">Página Home de la consola</a>
+  <a href="#consideraciones">Consideraciones previas</a>
+
+  <div class="group">Sección 1</div>
+  <a class="top" href="#s1">Crear un clúster y agregar un tópico</a>
+  <a href="#s1-p1">Paso 1: Crear un clúster Kafka</a>
+  <a href="#s1-p2">Paso 2: Crear un tópico</a>
+  <a href="#s1-p3">Paso 3: Crear un productor</a>
+  <a href="#s1-p4">Paso 4: Ver mensajes</a>
+  <a href="#s1-p5">Paso 5: Ver el esquema</a>
+  <a href="#s1-p6">Paso 6: Inspeccionar el flujo</a>
+  <a href="#s1-p7">Paso 7: Eliminar recursos</a>
+
+  <div class="group">Sección 2</div>
+  <a class="top" href="#s2">Consultar datos con Flink SQL</a>
+  <a href="#s2-p1">Paso 1: Crear un workspace de Flink</a>
+  <a href="#s2-p2">Paso 2: Ejecutar sentencias SQL</a>
+  <a href="#s2-p3">Paso 3: Enmascarar un campo</a>
+  <a href="#s2-p4">Paso 4: Ver el Stream Lineage</a>
+  <a href="#s2-p5">Paso 5: Eliminar recursos</a>
+
+  <div class="group">Más información</div>
+  <a href="#relacionado">Contenido relacionado</a>
+</nav>
+
+<main>
+
+  <!-- ===================== INTRO ===================== -->
+  <section id="intro">
+    <div class="breadcrumb">Inicio &nbsp;/&nbsp; Laboratorios &nbsp;/&nbsp; Inicio rápido de Confluent Cloud</div>
+    <h1>Inicio rápido de Confluent Cloud</h1>
+    <p class="lead">Confluent Cloud es una plataforma de streaming de datos completamente gestionada y nativa en la nube, basada en Apache Kafka®. Esta guía rápida te ayuda a comenzar a transmitir datos mostrándote cómo crear un clúster, agregar un tópico y producir datos.</p>
+
+    <h4>¿Por qué usar Confluent Cloud en lugar de administrar Kafka por tu cuenta?</h4>
+    <p>Confluent Cloud elimina la complejidad operativa de Kafka con:</p>
+    <ul>
+      <li>Escalado automático y confiabilidad</li>
+      <li>Seguridad, monitoreo y gestión de esquemas integrados</li>
+      <li>Menor costo total de propiedad y desarrollo más rápido</li>
+    </ul>
+  </section>
+
+  <!-- ===================== HOME ===================== -->
+  <section id="home">
+    <h3>La página Home de la consola</h3>
+    <p>Al iniciar sesión en Confluent Cloud, la página Home muestra widgets para volver a los recursos que más utilizás y para monitorear tus entornos:</p>
+
+    <table>
+      <thead><tr><th>Widget</th><th>Descripción</th></tr></thead>
+      <tbody>
+        <tr><td>Resumen de recursos</td><td>Muestra cuántos entornos, clústeres, tópicos, conectores, cluster links, compute pools y SQL workspaces tenés. Seleccioná un tipo de recurso para ir a su lista.</td></tr>
+        <tr><td>Acción requerida</td><td>Lista los recursos que necesitan tu atención, como recursos inactivos. Seleccioná <strong>View all</strong> para ver la lista completa.</td></tr>
+        <tr><td>Favoritos</td><td>Lista los recursos que marcaste como favoritos (entornos, clústeres, tópicos o conectores) para volver a ellos directamente desde Home. Para agregar un favorito, seleccioná <strong>Add favorite</strong>, buscá y elegí el recurso. Para quitarlo, seleccioná <strong>Edit</strong> y luego <strong>Remove from favorites</strong>.</td></tr>
+        <tr><td>Visitados recientemente</td><td>Lista los recursos a los que accediste más recientemente, con el tiempo transcurrido desde la visita. Seleccioná <strong>View all</strong> para buscar en todo tu historial.</td></tr>
+        <tr><td>Descubrir datos</td><td>Muestra los tópicos creados recientemente en un entorno seleccionado. Seleccioná <strong>Explore more</strong> para explorar tus datos en Data Portal.</td></tr>
+        <tr><td>Data health score</td><td>Muestra una puntuación basada en cuántos de tus tópicos tienen un esquema registrado, y lista los tópicos que no lo tienen.</td></tr>
+        <tr><td>Blogs</td><td>Muestra publicaciones recientes del blog de Confluent.</td></tr>
+      </tbody>
+    </table>
+
+    <figure class="shot">
+      <div class="ph"><div class="icon"></div><strong>Captura: página Home de Confluent Cloud</strong><span>Vista general con los widgets de recursos, favoritos y data health score.</span><code>img/cc-00-home.png</code></div>
+      <img src="img/cc-00-home.png" alt="Página Home de Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+    </figure>
+  </section>
+
+  <!-- ===================== CONSIDERACIONES ===================== -->
+  <section id="consideraciones">
+    <h3>Consideraciones antes de comenzar</h3>
+    <ul>
+      <li>Esta guía rápida te pone en marcha con Confluent Cloud usando un clúster Kafka básico.</li>
+      <li>La primera sección muestra cómo usar Confluent Cloud para crear tópicos, y producir y consumir datos hacia y desde el clúster.</li>
+      <li>La segunda sección te guía en el uso de Confluent Cloud para Apache Flink® para ejecutar consultas sobre los datos usando sintaxis SQL.</li>
+      <li>Los flujos de trabajo asumen que ya contás con un entorno de Confluent Cloud funcionando, que incluye un paquete de Stream Governance.</li>
+      <li>Confluent Cloud ofrece una interfaz web, una interfaz de línea de comandos local y APIs REST para administrar tus entornos y recursos.</li>
+    </ul>
+
+    <h4>Prerrequisitos</h4>
+    <ul>
+      <li>Acceso a Confluent Cloud. Para comenzar de forma gratuita, registrate en la <a href="https://confluent.cloud/signup" target="_blank" rel="noopener">prueba gratuita de Confluent Cloud</a>.</li>
+      <li>Conectividad a Internet</li>
+      <li>Paquete de Stream Governance</li>
+    </ul>
+  </section>
+
+  <!-- ===================== SECCIÓN 1 ===================== -->
+  <h2 id="s1">Sección 1: Crear un clúster y agregar un tópico</h2>
+  <p>Esta sección configura un clúster Kafka en Confluent Cloud y muestra cómo producir datos hacia un tópico usando la consola web.</p>
+
+  <!-- Paso 1 -->
+  <h3 id="s1-p1"><span class="step-tag">Paso 1</span> Crear un clúster Kafka en Confluent Cloud</h3>
+  <p>En este paso creás y lanzás un clúster Kafka básico dentro de tu entorno por defecto.</p>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li>Iniciá sesión en Confluent Cloud en <a href="https://confluent.cloud" target="_blank" rel="noopener">confluent.cloud</a>.</li>
+    <li>Hacé clic en <strong>+ Add cluster</strong>.</li>
+    <li>En la página <strong>Create cluster</strong>, especificá un nombre para el clúster.</li>
+    <li>En <strong>Cluster type</strong>, seleccioná <strong>Basic</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: página «Create cluster»</strong><span>Selección de tipo de clúster Basic.</span><code>img/cc-01a-create-cluster.png</code></div>
+    <img src="img/cc-01a-create-cluster.png" alt="Página Create cluster en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <div class="note">
+    <span class="label">Nota</span>
+    <p>Este ejemplo crea un clúster Kafka Basic, que soporta disponibilidad en zona única. Para información sobre otros tipos de clúster, consultá la documentación de <a href="https://docs.confluent.io/cloud/current/clusters/cluster-types.html" target="_blank" rel="noopener">tipos de clúster de Confluent Cloud</a>.</p>
+  </div>
+
+  <ol class="steps" start="5" style="counter-reset: s 4;">
+    <li>En <strong>Provider and region</strong>, seleccioná un proveedor de nube y una región.</li>
+    <li>Revisá el resumen de costos y seleccioná <strong>Launch cluster</strong>.</li>
+  </ol>
+
+  <div class="note warn">
+    <span class="label">Importante</span>
+    <p>Si no configuraste un método de pago, agregá uno o ingresá un código promocional antes de poder lanzar el clúster.</p>
+  </div>
+
+  <p>Después de que tu clúster se aprovisione, se muestra la página <strong>Cluster Overview</strong>. El tiempo de aprovisionamiento varía según el proveedor de nube y puede tardar algunos minutos.</p>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: página «Cluster Overview»</strong><span>Clúster aprovisionado y listo para usar.</span><code>img/cc-01b-cluster-overview.png</code></div>
+    <img src="img/cc-01b-cluster-overview.png" alt="Página Cluster Overview en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <p>Ahora podés configurar aplicaciones y datos en tu nuevo clúster.</p>
+
+  <!-- Paso 2 -->
+  <h3 id="s1-p2"><span class="step-tag">Paso 2</span> Crear un tópico Kafka</h3>
+
+  <div class="note theory">
+    <span class="label">¿Qué es un tópico?</span>
+    <p>Un <strong>tópico</strong> es un log ordenado e inmutable de mensajes. Los productores escriben al final y los consumidores leen desde cualquier posición usando un <em>offset</em>. Se divide en <strong>particiones</strong> para paralelizar la carga entre brokers, y cada partición puede replicarse para garantizar durabilidad.</p>
+    <p><a href="https://docs.confluent.io/kafka/introduction.html#topics" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
+  <p>En este paso creás un tópico Kafka llamado <code>users</code> usando la consola web.</p>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li>En el menú de navegación, hacé clic en <strong>Topics</strong> y luego en <strong>Create topic</strong>.</li>
+    <li>En el campo <strong>Topic name</strong>, escribí <code>users</code> y seleccioná <strong>Create with defaults</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: creación del tópico <code>users</code></strong><span>Campo Topic name y botón Create with defaults.</span><code>img/cc-02-create-topic.png</code></div>
+    <img src="img/cc-02-create-topic.png" alt="Creación del tópico users en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <p>El tópico <code>users</code> queda creado en el clúster Kafka y disponible para productores y consumidores.</p>
+  <div class="note">
+    <span class="label">Nota</span>
+    <p>El mensaje de éxito puede sugerirte realizar una acción; continuá con el <strong>Paso 3: Crear un productor de ejemplo</strong>.</p>
+  </div>
+
+  <!-- Paso 3 -->
+  <h3 id="s1-p3"><span class="step-tag">Paso 3</span> Crear un productor de ejemplo</h3>
+
+  <div class="note theory">
+    <span class="label">¿Qué es Schema Registry?</span>
+    <p><strong>Schema Registry</strong> almacena y versiona los esquemas de los mensajes de Kafka. En Confluent Cloud, cuando el conector Datagen produce datos con el formato <strong>JSON_SR</strong>, registra automáticamente el esquema del tópico en Schema Registry. Esto garantiza que productores y consumidores acuerden el formato de los datos.</p>
+    <p><a href="https://docs.confluent.io/cloud/current/get-started/schema-registry.html" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
+  <p>Un conector es un componente enchufable que transmite datos hacia o desde Kafka. Este paso usa el conector <strong>Datagen Source</strong> alojado en Confluent Cloud para producir datos de ejemplo hacia el tópico <code>users</code>.</p>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li>En el menú de navegación, seleccioná <strong>Connectors</strong>.</li>
+    <li>En el cuadro de búsqueda, escribí <code>datagen</code>.</li>
+    <li>En los resultados, seleccioná el conector <strong>Datagen Source</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: búsqueda del conector Datagen</strong><span>Resultado de búsqueda con el conector Datagen Source.</span><code>img/cc-03a-datagen-search.png</code></div>
+    <img src="img/cc-03a-datagen-search.png" alt="Búsqueda del conector Datagen en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <div class="note tip">
+    <span class="label">Tip</span>
+    <p>Si aparece el cuadro <strong>Launch Sample Data</strong>, seleccioná <strong>Additional configuration</strong>.</p>
+  </div>
+
+  <ol class="steps" start="4" style="counter-reset: s 3;">
+    <li>En el diálogo <strong>Launch Sample Data</strong>, seleccioná la plantilla <strong>Users</strong> y hacé clic en <strong>Additional configuration</strong>.</li>
+    <li>En el diálogo de selección de tópico, seleccioná el tópico <code>users</code> y hacé clic en <strong>Continue</strong>.</li>
+    <li>En el diálogo de credenciales Kafka, seleccioná <strong>My account</strong> y hacé clic en <strong>Generate API key &amp; download</strong>, luego en <strong>Continue</strong>.</li>
+  </ol>
+
+  <div class="note">
+    <span class="label">Nota</span>
+    <p>Esto crea una API key y un secret que permiten al conector acceder a tu clúster, y los descarga a tu computadora. Una API key aplica al clúster Kafka activo — si agregás un nuevo clúster, debés crear una nueva API key.</p>
+  </div>
+
+  <ol class="steps" start="7" style="counter-reset: s 6;">
+    <li>En la página <strong>Configuration</strong>, seleccioná <strong>JSON_SR</strong> para el formato del valor de salida, seleccioná la plantilla <strong>Users</strong> y hacé clic en <strong>Continue</strong>.</li>
+    <li>Para el tamaño del conector, dejá el slider en el valor por defecto de 1 tarea y hacé clic en <strong>Continue</strong>.</li>
+    <li>En la página <strong>Review and launch</strong>, reemplazá el nombre del conector por <code>DatagenSourceConnector_users</code>.</li>
+    <li>Hacé clic en <strong>Continue</strong> para iniciar el conector.</li>
+  </ol>
+
+  <p>El estado del nuevo conector debería mostrar <em>Provisioning</em> por unos segundos. Cuando el estado cambie a <em>Running</em>, el conector está produciendo datos hacia el tópico <code>users</code>.</p>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: conector Datagen en ejecución</strong><span>Estado <em>Running</em> del conector <code>DatagenSourceConnector_users</code>.</span><code>img/cc-03b-connector-running.png</code></div>
+    <img src="img/cc-03b-connector-running.png" alt="Conector Datagen Source en ejecución en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 4 -->
+  <h3 id="s1-p4"><span class="step-tag">Paso 4</span> Ver los mensajes</h3>
+  <p>Tu nuevo tópico <code>users</code> ya está recibiendo mensajes. Usá la consola de Confluent Cloud para ver los datos.</p>
+
+  <ol class="steps">
+    <li>En el menú de navegación, seleccioná <strong>Topics</strong> para mostrar la lista de tópicos de tu clúster.</li>
+    <li>Seleccioná el tópico <code>users</code>.</li>
+    <li>En la página de detalle del tópico <code>users</code>, seleccioná <strong>Messages</strong> para ver los mensajes que se están produciendo.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: pestaña «Messages» del tópico users</strong><span>Mensajes llegando en tiempo real.</span><code>img/cc-04-messages.png</code></div>
+    <img src="img/cc-04-messages.png" alt="Mensajes del tópico users en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 5 -->
+  <h3 id="s1-p5"><span class="step-tag">Paso 5</span> Ver el esquema del tópico</h3>
+  <p>Cuando el conector del Paso 3 produce datos hacia el tópico <code>users</code>, registra automáticamente un esquema en Schema Registry. El esquema mantiene los datos consistentes y compatibles a medida que las aplicaciones evolucionan.</p>
+
+  <ol class="steps">
+    <li>En el menú de navegación, seleccioná <strong>Topics</strong> y luego el tópico <code>users</code>.</li>
+    <li>En la página de detalle del tópico, hacé clic en <strong>Schema</strong> para ver el esquema registrado.</li>
+  </ol>
+
+  <p>El esquema lista cada campo y su tipo, definiendo la estructura que acuerdan productores y consumidores.</p>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: esquema registrado del tópico users</strong><span>Campos y tipos del esquema del valor de <code>users</code>.</span><code>img/cc-05-schema.png</code></div>
+    <img src="img/cc-05-schema.png" alt="Esquema registrado del tópico users en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 6 -->
+  <h3 id="s1-p6"><span class="step-tag">Paso 6</span> Inspeccionar el flujo de datos</h3>
+  <p>Usá <strong>Stream Lineage</strong> para rastrear el movimiento de los datos a través de tu clúster.</p>
+
+  <ol class="steps">
+    <li>Hacé clic en <strong>Lineage</strong> en el menú de navegación.</li>
+    <li>Hacé clic en el nodo <strong>DatagenSourceConnector_users</strong>. El panel de detalle muestra gráficos de producción total y otros datos.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: Stream Lineage — nodo del conector</strong><span>Detalle de producción del conector <code>DatagenSourceConnector_users</code>.</span><code>img/cc-06a-lineage-connector.png</code></div>
+    <img src="img/cc-06a-lineage-connector.png" alt="Stream Lineage - nodo del conector en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="3" style="counter-reset: s 2;">
+    <li>Cerrá esta vista y seleccioná el nodo del tópico <code>users</code>. Hacé clic en <strong>Overview</strong> para ver gráficos de throughput total. Navegá por las demás pestañas para ver más detalles: <strong>Schema</strong>, <strong>Metadata</strong>, <strong>Messages</strong>.</li>
+    <li>Hacé clic en la flecha en el borde del canvas para volver a abrir el menú de navegación.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: Stream Lineage — detalle del tópico</strong><span>Nodo del tópico <code>users</code> con sus detalles.</span><code>img/cc-06b-lineage-topic.png</code></div>
+    <img src="img/cc-06b-lineage-topic.png" alt="Stream Lineage - detalle del tópico users en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 7 -->
+  <h3 id="s1-p7"><span class="step-tag">Paso 7</span> Eliminar recursos <span class="tag gray">Opcional</span></h3>
+  <p>Si planeás continuar con la <strong>Sección 2</strong>, saltá este paso. De lo contrario, eliminá los recursos que creaste para evitar cargos inesperados en tu cuenta.</p>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li><strong>Eliminar el conector:</strong> en el menú de navegación, seleccioná <strong>Connectors</strong>. Hacé clic en <strong>DatagenSourceConnector_users</strong>, elegí la pestaña <strong>Settings</strong>, hacé clic en <strong>Delete connector</strong>, ingresá el nombre y confirmá.</li>
+    <li><strong>Eliminar el tópico:</strong> en el menú de navegación, hacé clic en <strong>Topics</strong>, seleccioná el tópico <code>users</code>, elegí la pestaña <strong>Settings</strong>, hacé clic en <strong>Delete topic</strong>, ingresá el nombre y confirmá.</li>
+    <li><strong>Eliminar el clúster:</strong> en el menú de navegación, seleccioná <strong>Cluster</strong>, elegí la pestaña <strong>Settings</strong>, hacé clic en <strong>Delete cluster</strong>, ingresá el nombre del clúster y confirmá.</li>
+  </ol>
+
+  <!-- ===================== SECCIÓN 2 ===================== -->
+  <h2 id="s2">Sección 2: Consultar datos de streaming con Flink SQL</h2>
+
+  <div class="note theory">
+    <span class="label">¿Qué es Apache Flink?</span>
+    <p><strong>Apache Flink®</strong> es un motor de procesamiento distribuido para datos en tiempo real. Permite ejecutar transformaciones, agregaciones y joins sobre flujos de datos directamente con <strong>Flink SQL</strong>. En Confluent Cloud, Flink está integrado con Kafka: los tópicos se exponen como tablas sobre las que se pueden hacer consultas SQL. Una consulta <code>SELECT</code> devuelve resultados continuos a medida que llegan mensajes nuevos; un <code>INSERT INTO</code> materializa el resultado en otro tópico.</p>
+    <p><a href="https://docs.confluent.io/cloud/current/flink/overview.html" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
+  <p>En esta sección creás un workspace de Flink y escribís consultas sobre el tópico <code>users</code> que creaste en la Sección 1.</p>
+
+  <!-- Paso 1 -->
+  <h3 id="s2-p1"><span class="step-tag">Paso 1</span> Crear un workspace de Flink</h3>
+  <p>Un workspace de Flink es un editor SQL interactivo para escribir y ejecutar consultas sobre datos de streaming.</p>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li>En el menú de navegación, hacé clic en <strong>Stream processing</strong>.</li>
+    <li>En el dropdown, seleccioná el entorno donde creaste el tópico <code>users</code> y el conector Datagen Source.</li>
+    <li>Hacé clic en <strong>Create workspace</strong>.</li>
+  </ol>
+
+  <div class="note tip">
+    <span class="label">Tip</span>
+    <p>Para experimentar con flujos de datos de ejemplo, hacé clic en <strong>Try example</strong> para abrir un workspace curado con consultas Flink SQL de ejemplo listas para ejecutar.</p>
+  </div>
+
+  <p>Se abre un nuevo workspace con una consulta de ejemplo en el editor de código. En segundo plano, Confluent Cloud crea un <strong>compute pool</strong> con los recursos necesarios para ejecutar tus sentencias SQL. Puede tardar un minuto o dos en aprovisionarse — el estado se muestra en la esquina superior derecha del workspace.</p>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: workspace de Flink</strong><span>Editor SQL con la consulta de ejemplo inicial.</span><code>img/cc-10-flink-workspace.png</code></div>
+    <img src="img/cc-10-flink-workspace.png" alt="Workspace de Flink en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 2 -->
+  <h3 id="s2-p2"><span class="step-tag">Paso 2</span> Ejecutar sentencias Flink SQL</h3>
+  <p>El compute pool está listo para ejecutar consultas cuando su estado cambia de <em>Provisioning</em> a <em>Running</em>.</p>
+
+  <ol class="steps">
+    <li>Hacé clic en <strong>Run</strong> para enviar la consulta de ejemplo. Los resultados se muestran debajo de la celda. La salida debería ser similar a:</li>
+  </ol>
+
+<pre class="out">EXPR$0
+0
+1
+2</pre>
+
+  <ol class="steps" start="2" style="counter-reset: s 1;">
+    <li>Borrá la consulta anterior de la celda y ejecutá la siguiente para inspeccionar el stream <code>users</code>. Confluent Cloud registra tablas automáticamente sobre tus tópicos Kafka — la consulta corre contra la tabla <code>users</code> con los datos del tópico subyacente.</li>
+  </ol>
+
+  <div class="code-label">Flink SQL</div>
+<pre><span class="kw">SELECT</span> * <span class="kw">FROM</span> users;</pre>
+
+  <p>La salida debería ser similar a:</p>
+<pre class="out">key             registertime  userid regionid gender
+x'557365725f34' 1502088104187 User_4 Region_1 MALE
+x'557365725f32' 1500243991207 User_2 Region_9 FEMALE
+x'557365725f32' 1497969328414 User_2 Region_9 OTHER
+...</pre>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: resultado de <code>SELECT * FROM users</code></strong><span>Filas del tópico users en tiempo real.</span><code>img/cc-11-select-users.png</code></div>
+    <img src="img/cc-11-select-users.png" alt="Resultado de SELECT * FROM users en Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="3" style="counter-reset: s 2;">
+    <li>Hacé clic en <strong>Stop</strong> para finalizar la consulta. Los datos siguen fluyendo desde el conector Datagen hacia la tabla <code>users</code> aunque la consulta SELECT esté detenida.</li>
+  </ol>
+
+  <!-- Paso 3 -->
+  <h3 id="s2-p3"><span class="step-tag">Paso 3</span> Enmascarar un campo</h3>
+  <p>En este paso ejecutás una sentencia Flink SQL para ocultar información personal en el stream <code>users</code> y publicar los datos depurados en un nuevo tópico Kafka llamado <code>users_mask</code>.</p>
+
+  <ol class="steps">
+    <li>Ejecutá la siguiente sentencia para crear una nueva tabla Flink basada en la tabla <code>users</code>:</li>
+  </ol>
+  <div class="code-label">Flink SQL</div>
+<pre><span class="kw">CREATE TABLE</span> users_mask <span class="kw">LIKE</span> users;</pre>
+
+  <ol class="steps" start="2" style="counter-reset: s 1;">
+    <li>Cuando el estado de la sentencia anterior sea <em>Completed</em>, ejecutá la siguiente sentencia para inspeccionar el esquema de la tabla <code>users_mask</code>:</li>
+  </ol>
+<pre><span class="kw">DESCRIBE</span> users_mask;</pre>
+
+  <p>La salida debería ser similar a:</p>
+<pre class="out">+--------------+-----------+----------+------------+
+| Column Name  | Data Type | Nullable |   Extras   |
++--------------+-----------+----------+------------+
+| key          | BYTES     | NULL     | BUCKET KEY |
+| registertime | BIGINT    | NULL     |            |
+| userid       | STRING    | NULL     |            |
+| regionid     | STRING    | NULL     |            |
+| gender       | STRING    | NULL     |            |
++--------------+-----------+----------+------------+</pre>
+
+  <ol class="steps" start="3" style="counter-reset: s 2;">
+    <li>Ejecutá la siguiente sentencia para iniciar una <strong>consulta persistente</strong> que usa la función <code>REGEXP_REPLACE</code> de Flink para enmascarar el campo <code>gender</code> y enviar los resultados a la tabla <code>users_mask</code>:</li>
+  </ol>
+<pre><span class="kw">INSERT INTO</span> users_mask <span class="kw">SELECT</span>
+  `key`,
+  registertime,
+  userid,
+  regionid,
+  REGEXP_REPLACE(gender, <span class="str">'(\w)'</span>, <span class="str">'*'</span>) <span class="kw">as</span> gender
+<span class="kw">FROM</span> users;</pre>
+
+  <p>La sentencia <code>INSERT INTO ... SELECT</code> se ejecuta de forma continua hasta que la detengas manualmente.</p>
+
+  <ol class="steps" start="4" style="counter-reset: s 3;">
+    <li>Hacé clic en el ícono <strong>Add new cell</strong> para crear una nueva celda y ejecutá la siguiente sentencia para inspeccionar las filas de <code>users_mask</code>:</li>
+  </ol>
+<pre><span class="kw">SELECT</span> * <span class="kw">FROM</span> users_mask;</pre>
+
+  <p>La salida debería ser similar a:</p>
+<pre class="out">key             registertime  userid regionid gender
+x'557365725f34' 1488737391835 User_4 Region_5 *****
+x'557365725f34' 1499070045309 User_4 Region_5 *****
+x'557365725f32' 1505447077187 User_2 Region_7 *****
+x'557365725f34' 1505592707164 User_4 Region_2 *****
+...</pre>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: resultado de <code>SELECT * FROM users_mask</code></strong><span>Campo <code>gender</code> enmascarado con asteriscos.</span><code>img/cc-12-users-mask.png</code></div>
+    <img src="img/cc-12-users-mask.png" alt="Resultado de SELECT * FROM users_mask en Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="5" style="counter-reset: s 4;">
+    <li>Hacé clic en <strong>Stop</strong> para finalizar la sentencia SELECT. La sentencia <code>INSERT INTO</code> que iniciaste antes continúa enviando datos al tópico <code>users_mask</code>.</li>
+  </ol>
+
+  <!-- Paso 4 -->
+  <h3 id="s2-p4"><span class="step-tag">Paso 4</span> Ver el Stream Lineage</h3>
+  <p>Tus sentencias Flink SQL son recursos en Confluent Cloud, al igual que tópicos y conectores, por lo que podés verlos en Stream Lineage.</p>
+
+  <ol class="steps">
+    <li>En tu workspace, abrí el navegador de catálogo y expandí tu entorno, clúster y <strong>Tables</strong> para encontrar el tópico <code>users_mask</code>.</li>
+    <li>Pasá el cursor sobre el tópico <code>users_mask</code> y hacé clic en <strong>View topic details</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: navegador de catálogo en el workspace</strong><span>Tópico <code>users_mask</code> en el catálogo de tablas.</span><code>img/cc-13a-catalog-browser.png</code></div>
+    <img src="img/cc-13a-catalog-browser.png" alt="Navegador de catálogo en el workspace de Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="3" style="counter-reset: s 2;">
+    <li>En el panel de detalles del tópico, bajo <strong>Lineage</strong>, hacé clic en <strong>View full lineage</strong>.</li>
+    <li>Pasá el cursor sobre los nodos en el diagrama de Stream Lineage para ver los detalles del flujo de datos.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: Stream Lineage del pipeline Flink</strong><span>Flujo completo desde el conector hasta <code>users_mask</code>.</span><code>img/cc-13b-lineage-flink.png</code></div>
+    <img src="img/cc-13b-lineage-flink.png" alt="Stream Lineage del pipeline Flink en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 5 -->
+  <h3 id="s2-p5"><span class="step-tag">Paso 5</span> Eliminar recursos</h3>
+  <p>Cuando terminés el laboratorio, eliminá los recursos que creaste para evitar cargos inesperados en tu cuenta.</p>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li><strong>Eliminar la consulta persistente:</strong> navegá a la página de detalles de tu entorno y hacé clic en <strong>Flink</strong>. En la lista de sentencias, encontrá la que tiene estado <em>Running</em>. Seleccioná su checkbox, hacé clic en <strong>Actions</strong> → <strong>Delete statement</strong>. En el diálogo de confirmación, escribí <code>DELETE</code> y confirmá.</li>
+    <li><strong>Eliminar el conector:</strong> en el menú de navegación, seleccioná <strong>Connectors</strong>. Hacé clic en <strong>DatagenSourceConnector_users</strong>, elegí la pestaña <strong>Settings</strong>, hacé clic en <strong>Delete connector</strong>, ingresá el nombre y confirmá.</li>
+    <li><strong>Eliminar los tópicos:</strong> en el menú de navegación, hacé clic en <strong>Topics</strong>. Para cada tópico (<code>users</code> y <code>users_mask</code>): seleccioná el tópico, elegí la pestaña <strong>Settings</strong>, hacé clic en <strong>Delete topic</strong>, ingresá el nombre y confirmá.</li>
+  </ol>
+
+  <!-- ===================== RELACIONADO ===================== -->
+  <h2 id="relacionado">Contenido relacionado</h2>
+  <div class="related">
+    <a href="https://docs.confluent.io/cloud/current/flink/overview.html">Procesamiento de streams con Confluent Cloud para Apache Flink</a>
+    <a href="https://docs.confluent.io/cloud/current/connectors/overview.html">Conectar sistemas externos a Confluent Cloud</a>
+    <a href="https://docs.confluent.io/cloud/current/get-started/schema-registry.html">Inicio rápido para gestión de esquemas en Confluent Cloud</a>
+    <a href="https://docs.confluent.io/cloud/current/client-apps/overview.html">Conectar clientes a Confluent Cloud</a>
+    <a href="https://docs.confluent.io/cloud/current/get-started/index.html">Guía original en inglés (Confluent Cloud)</a>
+  </div>
+
+  <footer>
+    Traducción al castellano de la guía «Quick Start for Confluent Cloud» de Confluent, Inc. Apache®, Apache Kafka®, Kafka®, Apache Flink® y los nombres de proyectos de código abierto asociados son marcas registradas de la Apache Software Foundation.
+  </footer>
+</main>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Vista ampliada de la captura">
+  <span class="lb-hint">Clic en la imagen: tamaño real &middot; Esc: cerrar</span>
+  <button class="lb-close" type="button" aria-label="Cerrar">&times;</button>
+  <img id="lb-img" alt="">
+</div>
+
+<script>
+(function () {
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lb-img');
+  var icon = '<svg width="20" height="20" viewBox="0 0 32 32" fill="#fff" aria-hidden="true"><path d="M29 27.586l-7.552-7.552a11.018 11.018 0 1 0-1.414 1.414L27.586 29zM4 13a9 9 0 1 1 9 9 9.01 9.01 0 0 1-9-9z"/><path d="M14 8h-2v4H8v2h4v4h2v-4h4v-2h-4z"/></svg>';
+
+  function open(img) {
+    lbImg.src = img.src;
+    lbImg.alt = img.alt;
+    lb.classList.remove('full');
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function close() {
+    lb.classList.remove('open', 'full');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('figure.shot').forEach(function (fig) {
+    var img = fig.querySelector('img');
+    if (!img) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'zoom-btn';
+    btn.title = 'Ampliar imagen';
+    btn.setAttribute('aria-label', 'Ampliar imagen');
+    btn.innerHTML = icon;
+    fig.appendChild(btn);
+
+    function mark() { if (img.naturalWidth > 0) fig.classList.add('has-img'); }
+    if (img.complete) mark(); else img.addEventListener('load', mark);
+
+    btn.addEventListener('click', function () { open(img); });
+    img.addEventListener('click', function () { open(img); });
+  });
+
+  var copyIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M28 10v18H10V10h18m0-2H10a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2z"/><path d="M4 18H2V4a2 2 0 0 1 2-2h14v2H4z"/></svg>';
+  var checkIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M13 24l-9-9 1.414-1.414L13 21.171 26.586 7.586 28 9 13 24z"/></svg>';
+  var failIcon  = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M24 9.4L22.6 8 16 14.6 9.4 8 8 9.4l6.6 6.6L8 22.6 9.4 24l6.6-6.6 6.6 6.6 1.4-1.4-6.6-6.6z"/></svg>';
+
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var wrap = document.createElement('div');
+    wrap.className = 'code-wrap';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    if (pre.classList.contains('out')) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.innerHTML = copyIcon;
+    btn.title = 'Copiar';
+    btn.setAttribute('aria-label', 'Copiar el código al portapapeles');
+    wrap.appendChild(btn);
+
+    var timer;
+    btn.addEventListener('click', function () {
+      var text = pre.textContent;
+      var p;
+      if (navigator.clipboard && window.isSecureContext) {
+        p = navigator.clipboard.writeText(text);
+      } else {
+        p = new Promise(function (resolve, reject) {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          ok ? resolve() : reject();
+        });
+      }
+      p.then(function () {
+        btn.innerHTML = checkIcon; btn.classList.add('copied');
+      }, function () {
+        btn.innerHTML = failIcon; btn.classList.add('failed');
+      });
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        btn.innerHTML = copyIcon; btn.classList.remove('copied', 'failed');
+      }, 1800);
+    });
+  });
+
+  lbImg.addEventListener('click', function (e) { e.stopPropagation(); lb.classList.toggle('full'); });
+  lb.addEventListener('click', close);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
+</script>
+</body>
+</html>
