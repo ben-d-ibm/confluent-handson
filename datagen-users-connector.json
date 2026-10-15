@@ -7,10 +7,10 @@
     "quickstart": "users",
     "schema.keyfield": "userid",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-    "value.converter": "io.confluent.connect.avro.AvroConverter",
-    "value.converter.schema.registry.url": "https://<ip>/sr/",
+    "value.converter": "io.confluent.connect.json.JsonSchemaConverter",
+    "value.converter.schema.registry.url": "http://schemaregistry.confluent.svc.cluster.local:8081",
     "value.converter.basic.auth.credentials.source": "USER_INFO",
-    "value.converter.basic.auth.user.info": "admin:<password>",
+    "value.converter.basic.auth.user.info": "admin:zdf1xVUwim6od9k95C7g38dU",
     "value.converter.auto.register.schemas": "false",
     "value.converter.use.latest.version": "true"
   }

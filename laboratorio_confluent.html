@@ -240,9 +240,6 @@
   <a href="#s2-p1">Paso 1: Configurar Schema Registry</a>
   <a href="#s2-p3">Paso 2: Abrir el editor SQL</a>
   <a href="#s2-p3x">Paso 3: Ejecutar sentencias SQL</a>
-  <a href="#s2-p4">Paso 4: Enmascarar un campo</a>
-  <a href="#s2-p5">Paso 5: Verificar users_mask</a>
-
   <div class="group">Más información</div>
   <a href="#relacionado">Contenido relacionado</a>
 </nav>
@@ -650,94 +647,6 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
     <li>Haz clic en <strong>Stop</strong> para finalizar la consulta.</li>
   </ol>
   <p>Los datos siguen fluyendo desde el conector Datagen hacia la tabla <code>users</code> aunque la consulta SELECT esté detenida.</p>
-
- 
-  <!-- Paso 4 -->
-  <h3 id="s2-p4"><span class="step-tag">Paso 4</span> Enmascarar un campo</h3>
-  <p>En este paso creás una nueva tabla <code>users_mask</code> y ejecutás una sentencia persistente que copia los datos de <code>users</code> enmascarando el campo <code>gender</code>. La sentencia corre de forma continua y escribe en un nuevo tópico Kafka con los datos transformados.</p>
-
-  <ol class="steps">
-    <li>Haz clic en <strong>Add statement</strong> para abrir una nueva celda en el editor.</li>
-  </ol>
-
-  <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: botón Add statement</strong><span>Nueva celda lista para escribir.</span><code>img/11a-add-statement.png</code></div>
-    <img src="img/11a-add-statement.png" alt="Botón Add statement en el editor Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
-  </figure>
-
-  <ol class="steps" start="2" style="counter-reset: s 1;">
-    <li>Escribe y ejecuta la siguiente sentencia para crear la tabla <code>users_mask</code> con sus columnas y opciones de conector explícitas.</li>
-  </ol>
-  <div class="code-label">Flink SQL</div>
-<pre><span class="kw">CREATE TABLE</span> users_mask (
-  registertime  BIGINT,
-  userid        STRING,
-  regionid      STRING,
-  gender        STRING
-) <span class="kw">WITH</span> (
-  <span class="str">'connector'</span>    = <span class="str">'confluent'</span>,
-  <span class="str">'value.format'</span> = <span class="str">'avro-registry'</span>
-);</pre>
-
-  <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: CREATE TABLE en el editor</strong><span>Sentencia <code>CREATE TABLE users_mask</code> lista para ejecutar.</span><code>img/11b-create-statement.png</code></div>
-    <img src="img/11b-create-statement.png" alt="CREATE TABLE users_mask en el editor Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
-  </figure>
-
-  <ol class="steps" start="3" style="counter-reset: s 2;">
-    <li>Cuando el estado de la sentencia anterior sea <em>Completed</em>, ejecuta la siguiente sentencia para iniciar una <strong>consulta persistente</strong> que usa la función <code>REGEXP_REPLACE</code> de Flink para enmascarar el valor del campo <code>gender</code> y enviar los resultados a la tabla <code>users_mask</code>.</li>
-  </ol>
-<pre><span class="kw">INSERT INTO</span> users_mask <span class="kw">SELECT</span>
-  registertime,
-  userid,
-  regionid,
-  REGEXP_REPLACE(gender, <span class="str">'(\w)'</span>, <span class="str">'*'</span>) <span class="kw">as</span> gender
-<span class="kw">FROM</span> users;</pre>
-
-  <p>La sentencia <code>INSERT INTO ... SELECT</code> se ejecuta de forma continua hasta que la detengas manualmente.</p>
-
-  <ol class="steps" start="4" style="counter-reset: s 3;">
-    <li>Ejecuta la siguiente sentencia en una nueva celda para ver las filas de <code>users_mask</code> con el campo enmascarado.</li>
-  </ol>
-<pre><span class="kw">SELECT</span> * <span class="kw">FROM</span> users_mask;</pre>
-
-  <p>La salida debería ser similar a:</p>
-<pre class="out">registertime  userid  regionid gender
-1488737391835 User_4  Region_5 *****
-1499070045309 User_4  Region_5 *****
-1505447077187 User_2  Region_7 *****
-1505592707164 User_4  Region_2 *****
-...</pre>
-
-  <ol class="steps" start="5" style="counter-reset: s 4;">
-    <li>Haz clic en <strong>Stop</strong> para finalizar la sentencia SELECT.</li>
-  </ol>
-  <p>La sentencia <code>INSERT INTO</code> que iniciaste antes continúa enviando datos al tópico <code>users_mask</code>.</p>
-
-  <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: resultado de <code>SELECT * FROM users_mask;</code></strong><span>Campo <code>gender</code> enmascarado con asteriscos.</span><code>img/12-flink-users-mask.png</code></div>
-    <img src="img/12-flink-users-mask.png" alt="Resultado de SELECT * FROM users_mask" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
-  </figure>
-
-  <!-- Paso 5 -->
-  <h3 id="s2-p5"><span class="step-tag">Paso 5</span> Verificar el tópico <code>users_mask</code></h3>
-  <p>La sentencia <code>INSERT INTO</code> del paso anterior crea automáticamente el tópico <code>users_mask</code> en Kafka y escribe en él los datos transformados de forma continua. Verificá que el tópico existe y está recibiendo mensajes.</p>
-
-  <div class="code-label">Consola web</div>
-  <ol class="steps">
-    <li>En el menú de navegación de Control Center, seleccioná <strong>Topics</strong>. Verificá que <code>users_mask</code> aparece en la lista.</li>
-    <li>Hacé clic en <code>users_mask</code> y abrí la pestaña <strong>Messages</strong> para ver los mensajes con el campo <code>gender</code> enmascarado.</li>
-  </ol>
-
-  <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: tópico users_mask en Topics</strong><span>Mensajes con el campo gender enmascarado.</span><code>img/13-users-mask-messages.png</code></div>
-    <img src="img/13-users-mask-messages.png" alt="Mensajes del tópico users_mask" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
-  </figure>
-
-  <div class="note">
-    <span class="label">Nota</span>
-    <p>El tópico <code>users_mask</code> seguirá recibiendo mensajes mientras la sentencia <code>INSERT INTO</code> esté en ejecución en el editor de Flink.</p>
-  </div>
 
   <!-- ===================== RELACIONADO ===================== -->
   <h2 id="relacionado">Contenido relacionado</h2>
