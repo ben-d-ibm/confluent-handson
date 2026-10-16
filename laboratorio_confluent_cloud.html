@@ -219,7 +219,8 @@
   <a href="#s2-p2">Paso 2: Ejecutar sentencias SQL</a>
   <a href="#s2-p3">Paso 3: Enmascarar un campo</a>
   <a href="#s2-p4">Paso 4: Ver el Stream Lineage</a>
-  <a href="#s2-p5">Paso 5: Eliminar recursos</a>
+  <a href="#s2-p5">Paso 5: Ver los tópicos creados</a>
+  <a href="#s2-p6">Paso 6: Eliminar recursos</a>
 
   <div class="group">Más información</div>
   <a href="#relacionado">Contenido relacionado</a>
@@ -297,13 +298,21 @@
   <ol class="steps">
     <li>Iniciá sesión en Confluent Cloud en <a href="https://confluent.cloud" target="_blank" rel="noopener">confluent.cloud</a>.</li>
     <li>Hacé clic en <strong>+ Add cluster</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: botón «+ Add cluster»</strong><span>Botón para agregar un nuevo clúster.</span><code>img/cc-click-add-cluster.png</code></div>
+    <img src="img/cc-click-add-cluster.png" alt="Botón Add cluster en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="3" style="counter-reset: s 2;">
     <li>En la página <strong>Create cluster</strong>, especificá un nombre para el clúster.</li>
     <li>En <strong>Cluster type</strong>, seleccioná <strong>Basic</strong>.</li>
   </ol>
 
   <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: página «Create cluster»</strong><span>Selección de tipo de clúster Basic.</span><code>img/cc-01a-create-cluster.png</code></div>
-    <img src="img/cc-01a-create-cluster.png" alt="Página Create cluster en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+    <div class="ph"><div class="icon"></div><strong>Captura: tipo de clúster Basic</strong><span>Selección de tipo de clúster Basic.</span><code>img/cc-click-basic.png</code></div>
+    <img src="img/cc-click-basic.png" alt="Selección del tipo de clúster Basic en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
   </figure>
 
   <div class="note">
@@ -324,8 +333,8 @@
   <p>Después de que tu clúster se aprovisione, se muestra la página <strong>Cluster Overview</strong>. El tiempo de aprovisionamiento varía según el proveedor de nube y puede tardar algunos minutos.</p>
 
   <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: página «Cluster Overview»</strong><span>Clúster aprovisionado y listo para usar.</span><code>img/cc-01b-cluster-overview.png</code></div>
-    <img src="img/cc-01b-cluster-overview.png" alt="Página Cluster Overview en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+    <div class="ph"><div class="icon"></div><strong>Captura: página «Cluster Overview»</strong><span>Clúster aprovisionado y listo para usar.</span><code>img/cc-cluster-overview.png</code></div>
+    <img src="img/cc-cluster-overview.png" alt="Página Cluster Overview en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
   </figure>
 
   <p>Ahora podés configurar aplicaciones y datos en tu nuevo clúster.</p>
@@ -343,16 +352,25 @@
 
   <div class="code-label">Consola web</div>
   <ol class="steps">
-    <li>En el menú de navegación, hacé clic en <strong>Topics</strong> y luego en <strong>Create topic</strong>.</li>
-    <li>En el campo <strong>Topic name</strong>, escribí <code>users</code> y seleccioná <strong>Create with defaults</strong>.</li>
+    <li>En el menú de navegación, hacé clic en <strong>Topics</strong> y luego en <strong>Create topic</strong> o <strong>Add topic</strong>.</li>
   </ol>
 
   <figure class="shot">
-    <div class="ph"><div class="icon"></div><strong>Captura: creación del tópico <code>users</code></strong><span>Campo Topic name y botón Create with defaults.</span><code>img/cc-02-create-topic.png</code></div>
-    <img src="img/cc-02-create-topic.png" alt="Creación del tópico users en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+    <div class="ph"><div class="icon"></div><strong>Captura: botón «Create topic»</strong><span>Sección Topics con el botón Create topic.</span><code>img/cc-create-topic.png</code></div>
+    <img src="img/cc-create-topic.png" alt="Botón Create topic en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="2" style="counter-reset: s 1;">
+    <li>En el campo <strong>Topic name</strong>, escribí <code>users</code> y seleccioná <strong>Create with defaults</strong>.</li>
+  </ol>
+
+  <figure class="shot" style="max-width: 26rem;">
+    <div class="ph"><div class="icon"></div><strong>Captura: creación del tópico <code>users</code></strong><span>Campo Topic name y botón Create with defaults.</span><code>img/cc-create-topic2.png</code></div>
+    <img src="img/cc-create-topic2.png" alt="Creación del tópico users en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
   </figure>
 
   <p>El tópico <code>users</code> queda creado en el clúster Kafka y disponible para productores y consumidores.</p>
+
   <div class="note">
     <span class="label">Nota</span>
     <p>El mensaje de éxito puede sugerirte realizar una acción; continuá con el <strong>Paso 3: Crear un productor de ejemplo</strong>.</p>
@@ -360,12 +378,6 @@
 
   <!-- Paso 3 -->
   <h3 id="s1-p3"><span class="step-tag">Paso 3</span> Crear un productor de ejemplo</h3>
-
-  <div class="note theory">
-    <span class="label">¿Qué es Schema Registry?</span>
-    <p><strong>Schema Registry</strong> almacena y versiona los esquemas de los mensajes de Kafka. En Confluent Cloud, cuando el conector Datagen produce datos con el formato <strong>JSON_SR</strong>, registra automáticamente el esquema del tópico en Schema Registry. Esto garantiza que productores y consumidores acuerden el formato de los datos.</p>
-    <p><a href="https://docs.confluent.io/cloud/current/get-started/schema-registry.html" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
-  </div>
 
   <p>Un conector es un componente enchufable que transmite datos hacia o desde Kafka. Este paso usa el conector <strong>Datagen Source</strong> alojado en Confluent Cloud para producir datos de ejemplo hacia el tópico <code>users</code>.</p>
 
@@ -388,9 +400,30 @@
 
   <ol class="steps" start="4" style="counter-reset: s 3;">
     <li>En el diálogo <strong>Launch Sample Data</strong>, seleccioná la plantilla <strong>Users</strong> y hacé clic en <strong>Additional configuration</strong>.</li>
+  </ol>
+
+  <figure class="shot" style="max-width: 26rem;">
+    <div class="ph"><div class="icon"></div><strong>Captura: diálogo «Launch Sample Data»</strong><span>Plantilla Users y enlace Additional configuration.</span><code>img/cc-additional-config.png</code></div>
+    <img src="img/cc-additional-config.png" alt="Diálogo Launch Sample Data en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="5" style="counter-reset: s 4;">
     <li>En el diálogo de selección de tópico, seleccioná el tópico <code>users</code> y hacé clic en <strong>Continue</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: selección del tópico</strong><span>Tópico <code>users</code> seleccionado.</span><code>img/cc-connector1.png</code></div>
+    <img src="img/cc-connector1.png" alt="Selección del tópico users en el asistente del conector" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="6" style="counter-reset: s 5;">
     <li>En el diálogo de credenciales Kafka, seleccioná <strong>My account</strong> y hacé clic en <strong>Generate API key &amp; download</strong>, luego en <strong>Continue</strong>.</li>
   </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: credenciales Kafka</strong><span>My account y botón Generate API key and download.</span><code>img/cc-connector5.png</code></div>
+    <img src="img/cc-connector5.png" alt="Credenciales Kafka del conector en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
 
   <div class="note">
     <span class="label">Nota</span>
@@ -399,8 +432,32 @@
 
   <ol class="steps" start="7" style="counter-reset: s 6;">
     <li>En la página <strong>Configuration</strong>, seleccioná <strong>JSON_SR</strong> para el formato del valor de salida, seleccioná la plantilla <strong>Users</strong> y hacé clic en <strong>Continue</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: página «Configuration»</strong><span>Formato JSON_SR y plantilla Users.</span><code>img/cc-connector4.png</code></div>
+    <img src="img/cc-connector4.png" alt="Página Configuration del conector en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="8" style="counter-reset: s 7;">
     <li>Para el tamaño del conector, dejá el slider en el valor por defecto de 1 tarea y hacé clic en <strong>Continue</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: tamaño del conector</strong><span>Slider de tareas en 1.</span><code>img/cc-connector3.png</code></div>
+    <img src="img/cc-connector3.png" alt="Tamaño del conector en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="9" style="counter-reset: s 8;">
     <li>En la página <strong>Review and launch</strong>, reemplazá el nombre del conector por <code>DatagenSourceConnector_users</code>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: página «Review and launch»</strong><span>Nombre del conector <code>DatagenSourceConnector_users</code>.</span><code>img/cc-connector2.png</code></div>
+    <img src="img/cc-connector2.png" alt="Página Review and launch del conector en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="10" style="counter-reset: s 9;">
     <li>Hacé clic en <strong>Continue</strong> para iniciar el conector.</li>
   </ol>
 
@@ -428,6 +485,13 @@
 
   <!-- Paso 5 -->
   <h3 id="s1-p5"><span class="step-tag">Paso 5</span> Ver el esquema del tópico</h3>
+
+  <div class="note theory">
+    <span class="label">¿Qué es Schema Registry?</span>
+    <p><strong>Schema Registry</strong> almacena y versiona los esquemas de los mensajes de Kafka. En Confluent Cloud, cuando el conector Datagen produce datos con el formato <strong>JSON_SR</strong>, registra automáticamente el esquema del tópico en Schema Registry. Esto garantiza que productores y consumidores acuerden el formato de los datos.</p>
+    <p><a href="https://docs.confluent.io/cloud/current/get-started/schema-registry.html" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
   <p>Cuando el conector del Paso 3 produce datos hacia el tópico <code>users</code>, registra automáticamente un esquema en Schema Registry. El esquema mantiene los datos consistentes y compatibles a medida que las aplicaciones evolucionan.</p>
 
   <ol class="steps">
@@ -444,6 +508,14 @@
 
   <!-- Paso 6 -->
   <h3 id="s1-p6"><span class="step-tag">Paso 6</span> Inspeccionar el flujo de datos</h3>
+
+  <div class="note theory">
+    <span class="label">¿Qué es Stream Lineage?</span>
+    <p><strong>Stream Lineage</strong> es una vista gráfica del recorrido de los datos en tiempo real dentro de Confluent Cloud. Muestra como nodos los productores, conectores, tópicos, sentencias de Flink SQL y consumidores, y como aristas el flujo de mensajes entre ellos, de modo que podés ver de dónde vienen los datos y quién los consume.</p>
+    <p>Es útil para entender dependencias, analizar el impacto de un cambio y depurar pipelines. Al seleccionar un nodo se abre un panel con métricas como el total producido o consumido.</p>
+    <p><a href="https://docs.confluent.io/cloud/current/stream-governance/stream-lineage.html" target="_blank" rel="noopener">Leer más en la documentación de Confluent →</a></p>
+  </div>
+
   <p>Usá <strong>Stream Lineage</strong> para rastrear el movimiento de los datos a través de tu clúster.</p>
 
   <ol class="steps">
@@ -494,17 +566,31 @@
 
   <div class="code-label">Consola web</div>
   <ol class="steps">
-    <li>En el menú de navegación, hacé clic en <strong>Stream processing</strong>.</li>
-    <li>En el dropdown, seleccioná el entorno donde creaste el tópico <code>users</code> y el conector Datagen Source.</li>
-    <li>Hacé clic en <strong>Create workspace</strong>.</li>
+    <li>En el menú de navegación, hacé clic en <strong>SQL workspaces</strong>.</li>
   </ol>
 
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: menú SQL workspaces</strong><span>Acceso a los workspaces de Flink desde Home.</span><code>img/cc-sql-workspaces-menu.png</code></div>
+    <img src="img/cc-sql-workspaces-menu.png" alt="Menú SQL workspaces en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: botón «Create workspace»</strong><span>Selector de entorno y botón Create workspace.</span><code>img/cc-create-workspace.png</code></div>
+    <img src="img/cc-create-workspace.png" alt="Botón Create workspace en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
   <div class="note tip">
-    <span class="label">Tip</span>
-    <p>Para experimentar con flujos de datos de ejemplo, hacé clic en <strong>Try example</strong> para abrir un workspace curado con consultas Flink SQL de ejemplo listas para ejecutar.</p>
+    <span class="label">Otra forma de llegar</span>
+    <p>También podés entrar a los workspaces desde la página de detalles de tu entorno: hacé clic en <strong>Flink</strong> y desde ahí abrí un SQL workspace.</p>
   </div>
 
-  <p>Se abre un nuevo workspace con una consulta de ejemplo en el editor de código. En segundo plano, Confluent Cloud crea un <strong>compute pool</strong> con los recursos necesarios para ejecutar tus sentencias SQL. Puede tardar un minuto o dos en aprovisionarse — el estado se muestra en la esquina superior derecha del workspace.</p>
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: página Flink del entorno</strong><span>Otra vía de acceso a los SQL workspaces desde el entorno.</span><code>img/cc-flink-statements.png</code></div>
+    <img src="img/cc-flink-statements.png" alt="Página Flink del entorno en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <p>Se abre un nuevo workspace con una consulta de ejemplo en el editor de código. En segundo plano, Confluent Cloud crea un <strong>compute pool</strong> con los recursos necesarios para ejecutar tus sentencias SQL. Puede tardar un minuto o dos en aprovisionarse. El estado se muestra en la esquina superior derecha del workspace.</p>
 
   <figure class="shot">
     <div class="ph"><div class="icon"></div><strong>Captura: workspace de Flink</strong><span>Editor SQL con la consulta de ejemplo inicial.</span><code>img/cc-10-flink-workspace.png</code></div>
@@ -523,6 +609,11 @@
 0
 1
 2</pre>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: consulta de ejemplo</strong><span>Resultado de la consulta de ejemplo con el botón Run.</span><code>img/cc-flink-run-example.png</code></div>
+    <img src="img/cc-flink-run-example.png" alt="Resultado de la consulta de ejemplo en Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
 
   <ol class="steps" start="2" style="counter-reset: s 1;">
     <li>Borrá la consulta anterior de la celda y ejecutá la siguiente para inspeccionar el stream <code>users</code>. Confluent Cloud registra tablas automáticamente sobre tus tópicos Kafka — la consulta corre contra la tabla <code>users</code> con los datos del tópico subyacente.</li>
@@ -557,6 +648,11 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
   <div class="code-label">Flink SQL</div>
 <pre><span class="kw">CREATE TABLE</span> users_mask <span class="kw">LIKE</span> users;</pre>
 
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: <code>CREATE TABLE users_mask</code></strong><span>Sentencia completada con éxito.</span><code>img/cc-create-table-users-mask.png</code></div>
+    <img src="img/cc-create-table-users-mask.png" alt="Resultado de CREATE TABLE users_mask en Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
   <ol class="steps" start="2" style="counter-reset: s 1;">
     <li>Cuando el estado de la sentencia anterior sea <em>Completed</em>, ejecutá la siguiente sentencia para inspeccionar el esquema de la tabla <code>users_mask</code>:</li>
   </ol>
@@ -573,6 +669,11 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
 | gender       | STRING    | NULL     |            |
 +--------------+-----------+----------+------------+</pre>
 
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: <code>DESCRIBE users_mask</code></strong><span>Esquema de la tabla users_mask.</span><code>img/cc-describe-users-mask.png</code></div>
+    <img src="img/cc-describe-users-mask.png" alt="Resultado de DESCRIBE users_mask en Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
   <ol class="steps" start="3" style="counter-reset: s 2;">
     <li>Ejecutá la siguiente sentencia para iniciar una <strong>consulta persistente</strong> que usa la función <code>REGEXP_REPLACE</code> de Flink para enmascarar el campo <code>gender</code> y enviar los resultados a la tabla <code>users_mask</code>:</li>
   </ol>
@@ -583,6 +684,11 @@ x'557365725f32' 1497969328414 User_2 Region_9 OTHER
   regionid,
   REGEXP_REPLACE(gender, <span class="str">'(\w)'</span>, <span class="str">'*'</span>) <span class="kw">as</span> gender
 <span class="kw">FROM</span> users;</pre>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: <code>INSERT INTO users_mask</code></strong><span>Consulta persistente en estado Running.</span><code>img/cc-insert-users-mask.png</code></div>
+    <img src="img/cc-insert-users-mask.png" alt="Sentencia INSERT INTO users_mask en ejecución en Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
 
   <p>La sentencia <code>INSERT INTO ... SELECT</code> se ejecuta de forma continua hasta que la detengas manualmente.</p>
 
@@ -617,13 +723,21 @@ x'557365725f34' 1505592707164 User_4 Region_2 *****
     <li>Pasá el cursor sobre el tópico <code>users_mask</code> y hacé clic en <strong>View topic details</strong>.</li>
   </ol>
 
-  <figure class="shot">
+  <figure class="shot" style="max-width: 20rem;">
     <div class="ph"><div class="icon"></div><strong>Captura: navegador de catálogo en el workspace</strong><span>Tópico <code>users_mask</code> en el catálogo de tablas.</span><code>img/cc-13a-catalog-browser.png</code></div>
     <img src="img/cc-13a-catalog-browser.png" alt="Navegador de catálogo en el workspace de Flink" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
   </figure>
 
   <ol class="steps" start="3" style="counter-reset: s 2;">
     <li>En el panel de detalles del tópico, bajo <strong>Lineage</strong>, hacé clic en <strong>View full lineage</strong>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: panel de detalles del tópico</strong><span>Enlace View full lineage bajo Lineage.</span><code>img/cc-view-full-lineage.png</code></div>
+    <img src="img/cc-view-full-lineage.png" alt="Panel de detalles del tópico users_mask con el enlace View full lineage" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <ol class="steps" start="4" style="counter-reset: s 3;">
     <li>Pasá el cursor sobre los nodos en el diagrama de Stream Lineage para ver los detalles del flujo de datos.</li>
   </ol>
 
@@ -633,7 +747,22 @@ x'557365725f34' 1505592707164 User_4 Region_2 *****
   </figure>
 
   <!-- Paso 5 -->
-  <h3 id="s2-p5"><span class="step-tag">Paso 5</span> Eliminar recursos</h3>
+  <h3 id="s2-p5"><span class="step-tag">Paso 5</span> Ver los tópicos creados</h3>
+  <p>La consulta persistente del Paso 3 creó el tópico <code>users_mask</code> en tu clúster Kafka, además del tópico <code>users</code> que ya existía.</p>
+
+  <div class="code-label">Consola web</div>
+  <ol class="steps">
+    <li>En el menú de navegación, hacé clic en <strong>Topics</strong>.</li>
+    <li>Verificá que aparezcan los tópicos <code>users</code> y <code>users_mask</code>.</li>
+  </ol>
+
+  <figure class="shot">
+    <div class="ph"><div class="icon"></div><strong>Captura: tópico <code>users_mask</code> creado desde Flink</strong><span>Lista de tópicos con <code>users</code> y <code>users_mask</code>.</span><code>img/cc-topics-list.png</code></div>
+    <img src="img/cc-topics-list.png" alt="Tópicos users y users_mask en Confluent Cloud" onload="this.previousElementSibling.style.display='none'" onerror="this.style.display='none'">
+  </figure>
+
+  <!-- Paso 6 -->
+  <h3 id="s2-p6"><span class="step-tag">Paso 6</span> Eliminar recursos</h3>
   <p>Cuando terminés el laboratorio, eliminá los recursos que creaste para evitar cargos inesperados en tu cuenta.</p>
 
   <div class="code-label">Consola web</div>
