@@ -57,6 +57,7 @@
     text-decoration: none; border-left: 3px solid transparent; line-height: 1.25;
   }
   .sidenav a:hover { background: var(--layer-hover); color: var(--text); }
+  .sidenav a.active { background: var(--layer); color: var(--text); border-left-color: var(--blue-60); font-weight: 600; }
   .sidenav a.top { padding-left: 1rem; color: var(--text); font-weight: 600; }
 
   /* ---------- Contenido ---------- */
@@ -131,7 +132,7 @@
   .kw { color: #78a9ff; } .str { color: #42be65; } .cm { color: #8d8d8d; }
 
   /* ---------- Marcador de captura de pantalla ---------- */
-  figure.shot { margin: 1.5rem 0 2rem; max-width: 100%; display: grid; position: relative; }
+  figure.shot { margin: 1.5rem 0 2rem; max-width: 52rem; display: grid; position: relative; }
   figure.shot .ph { max-width: 46rem; }
   figure.shot img { cursor: zoom-in; }
   .zoom-btn {
@@ -881,6 +882,33 @@ x'557365725f34' 1505592707164 User_4 Region_2 *****
   lbImg.addEventListener('click', function (e) { e.stopPropagation(); lb.classList.toggle('full'); });
   lb.addEventListener('click', close);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  // Índice lateral: resalta la sección que se está leyendo
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.sidenav a[href^="#"]'));
+  var targets = navLinks.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  });
+  var nav = document.querySelector('.sidenav');
+  var current = -1, ticking = false;
+
+  function updateActive() {
+    ticking = false;
+    var line = 48 + 32; // alto del header + margen
+    var idx = 0;
+    for (var i = 0; i < targets.length; i++) {
+      if (targets[i] && targets[i].getBoundingClientRect().top <= line) idx = i;
+    }
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) idx = targets.length - 1;
+    if (idx === current) return;
+    current = idx;
+    navLinks.forEach(function (a, i) { a.classList.toggle('active', i === idx); });
+    var a = navLinks[idx];
+    if (a.offsetTop < nav.scrollTop + 40) nav.scrollTop = a.offsetTop - 40;
+    else if (a.offsetTop + a.offsetHeight > nav.scrollTop + nav.clientHeight - 40) nav.scrollTop = a.offsetTop + a.offsetHeight - nav.clientHeight + 40;
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(updateActive); } }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  updateActive();
 })();
 </script>
 </body>
