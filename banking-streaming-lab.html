@@ -81,9 +81,18 @@
   a:hover { color: var(--blue-70); }
   ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; max-width: 48rem; }
   li { margin-bottom: .5rem; }
+
+  /* Inline code & pre code contrast fix */
   code {
     font-family: var(--font-mono); font-size: 13.5px; background: var(--layer); padding: 2px 6px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border); color: var(--text);
+  }
+  pre code {
+    background: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+    border: none !important;
+    font-size: inherit !important;
   }
 
   /* Etiqueta de paso */
@@ -140,6 +149,22 @@
   .copy-btn.failed { color: #fa4d56; }
   .kw { color: #78a9ff; } .str { color: #42be65; } .cm { color: #8d8d8d; }
 
+  /* Tabs OS */
+  .tabs-nav {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border-strong);
+    margin: 1.5rem 0 1.25rem; max-width: 48rem; background: var(--layer);
+  }
+  .tab-btn {
+    padding: .75rem 1.25rem; font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    color: var(--text-secondary); background: transparent; border: 0; cursor: pointer;
+    border-bottom: 3px solid transparent; transition: all .15s;
+    display: inline-flex; align-items: center; gap: .5rem;
+  }
+  .tab-btn:hover { background: var(--layer-hover); color: var(--text); }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--blue-60); font-weight: 600; background: var(--bg); }
+  .tab-pane { display: none; max-width: 48rem; }
+  .tab-pane.active { display: block; }
+
   /* Botón de acción Carbon */
   .btn-primary {
     display: inline-flex; align-items: center; gap: .75rem; background: var(--blue-60); color: #fff;
@@ -178,7 +203,7 @@
   <a href="#recursos">5. ¿Qué recursos se despliegan?</a>
 
   <div class="group">Despliegue</div>
-  <a class="top" href="#prerequisitos">6. Prerrequisitos</a>
+  <a class="top" href="#prerequisitos">6. Prerrequisitos e Instalación</a>
   <a href="#descarga">7. Descarga del asset</a>
   <a href="#credenciales">8. Configurar credenciales</a>
   <a href="#validacion">9. Validar entorno (make check)</a>
@@ -204,12 +229,12 @@
   <section id="intro">
     <div class="breadcrumb"><a href="index.html">Laboratorios</a> &nbsp;/&nbsp; Streaming Bancario con IaC</div>
     <h1>Banking Real-Time Loan Decisions with Confluent</h1>
-    <p class="lead">Building an end-to-end streaming architecture with Infrastructure as Code.</p>
+    <p class="lead">Construcción de una arquitectura de streaming end-to-end con Infrastructure as Code.</p>
 
     <div class="note theory">
       <span class="label">El cambio de enfoque de este laboratorio</span>
       <p>En el laboratorio anterior exploraste las capacidades de Confluent Cloud interactuando con su interfaz gráfica (UI). En este segundo laboratorio cambiamos radicalmente de método: en lugar de crear componentes uno a uno desde la consola web, desplegaremos una arquitectura completa, gobernada y lista para producción utilizando <strong>Infrastructure as Code (IaC)</strong> y automatización.</p>
-      <p style="margin-top: .5rem; font-weight: 600;"><em>"From clicking resources into existence to deploying a reproducible streaming architecture."</em></p>
+      <p style="margin-top: .5rem; font-weight: 600;"><em>«De crear recursos haciendo clics a desplegar una arquitectura de streaming reproducible.»</em></p>
     </div>
   </section>
 
@@ -334,7 +359,7 @@ Demo Producer ───────   [Tópico: loan-decisions]
         <li><strong>Reproducibilidad:</strong> Permite recrear el entorno completo en cualquier región o cuenta cloud sin desviaciones manuales.</li>
         <li><strong>Control de versiones:</strong> Toda la configuración de tópicos, umbrales de scoring, esquemas y ACLs reside en Git.</li>
         <li><strong>Seguridad por diseño:</strong> Cada microservicio recibe credenciales únicas y permisos estrictamente acotados mediante ACLs gestionadas por Terraform.</li>
-        <li><strong>Limpieza absoluta:</strong> Se elimina todo el entorno con un único comando (<code class="inline">make destroy</code>), evitando costes residuales.</li>
+        <li><strong>Limpieza absoluta:</strong> Se elimina todo el entorno con un único comando (<code>make destroy</code>), evitando costes residuales.</li>
       </ul>
     </div>
   </section>
@@ -419,20 +444,111 @@ Demo Producer ───────   [Tópico: loan-decisions]
 
   <!-- ===================== 6. PRERREQUISITOS ===================== -->
   <section id="prerequisitos">
-    <h2>6. Prerrequisitos</h2>
-    <p>El script de verificación (<code class="inline">scripts/check.sh</code>) valida que tu estación de trabajo cuente con las siguientes herramientas instaladas y configuradas:</p>
+    <h2>6. Prerrequisitos e Instalación</h2>
+    <p>El script de validación (<code>scripts/check.sh</code>) comprueba que tu entorno cuente con las herramientas necesarias. Seleccioná tu sistema operativo para ver la guía paso a paso:</p>
 
-    <ol class="steps">
-      <li><strong>Terraform CLI:</strong> Versión 1.x o superior instalada (<code class="inline">terraform version</code>).</li>
-      <li><strong>Herramientas de sistema:</strong> <code class="inline">make</code>, <code class="inline">curl</code>, <code class="inline">jq</code> y <code class="inline">openssl</code>.</li>
-      <li><strong>Runtime de contenedores:</strong> <strong>Podman</strong> (<code class="inline">podman</code> + <code class="inline">podman compose</code>) o <strong>Docker</strong> (<code class="inline">docker</code> + <code class="inline">docker compose</code>) activo y en ejecución.</li>
-      <li><strong>Cuenta de Confluent Cloud:</strong> API Key y Secret de tipo <em>Cloud Resource Management</em> con rol de administración a nivel de organización (permisos para crear entornos y service accounts).</li>
-      <li><strong>Puertos locales libres:</strong> Los puertos <code class="inline">5432</code>, <code class="inline">8083</code>, <code class="inline">8080</code> y <code class="inline">8081</code> deben estar disponibles en <code class="inline">127.0.0.1</code>.</li>
-    </ol>
+    <!-- OS Switcher Tabs -->
+    <div class="tabs-nav" role="tablist">
+      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="tab-mac">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.85c.66-.82 1.11-1.96.99-3.1-.96.04-2.12.64-2.81 1.45-.6.7-1.13 1.83-1 2.94 1.07.08 2.16-.47 2.82-1.29"/></svg>
+        macOS
+      </button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-win">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M4 6.75L13.78 5.4v9.64H4V6.75zm0 18.5l9.78 1.35v-9.64H4v8.29zm11.43 1.58L28 28.5V15.04H15.43v11.79zm0-23.66v11.87H28V3.5l-12.57 1.67z"/></svg>
+        Windows (WSL2 / PowerShell)
+      </button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-linux">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M25.7 19.5c-.3-.8-.9-1.5-1.7-1.9.4-.9.6-1.9.5-2.9-.2-2.7-2.1-4.8-4.7-5.1-.3-.6-.7-1.1-1.3-1.5-.7-.4-1.5-.6-2.3-.5-1.5.1-2.9 1-3.6 2.3-.6.1-1.2.3-1.7.7-.7.5-1.2 1.3-1.4 2.1-.8.5-1.4 1.3-1.7 2.2-.3 1-.3 2 .1 3 .3.8.9 1.5 1.6 1.9-.3.9-.3 1.9-.1 2.8.4 1.4 1.5 2.5 2.9 2.9 1 .3 2.1.2 3-.3.8.7 1.9 1 3 1s2.2-.4 3-1.1c.9.5 2 .7 3 .4 1.4-.4 2.5-1.5 2.9-2.9.2-.9.2-1.9-.1-2.8.7-.4 1.3-1.1 1.6-1.9.5-1 .5-2.1.1-3.1zm-1.8 2.3c-.2.5-.6.9-1.1 1.1-.3.1-.6.4-.7.7-.2.6-.7 1.1-1.3 1.3-.6.2-1.3.1-1.8-.3-.3-.2-.6-.2-.9 0-.6.4-1.3.6-2.1.6s-1.5-.2-2.1-.6c-.3-.2-.7-.2-.9 0-.5.4-1.2.5-1.8.3-.6-.2-1.1-.7-1.3-1.3-.1-.3-.4-.6-.7-.7-.5-.2-.9-.6-1.1-1.1-.2-.6-.2-1.2 0-1.8.2-.5.6-.9 1.1-1.1.3-.1.6-.4.7-.7.1-.6.5-1.1 1-1.4.5-.3 1.1-.4 1.7-.2.3.1.7 0 .9-.2.5-.7 1.3-1.2 2.2-1.3.9-.1 1.7.2 2.3.8.2.2.6.3.9.2.5-.2 1.1-.1 1.6.2.5.3.9.8 1 1.4.1.3.4.6.7.7.6.2 1 .6 1.2 1.1.3.6.3 1.2.1 1.8z"/></svg>
+        Linux (Ubuntu / Debian / RHEL)
+      </button>
+    </div>
+
+    <!-- Tab 1: macOS -->
+    <div class="tab-pane active" id="tab-mac">
+      <h4>Instalación en macOS (Homebrew)</h4>
+      <p>Utilizá Homebrew en la terminal de macOS para instalar las dependencias necesarias:</p>
+
+      <div class="code-label">Terminal macOS</div>
+      <pre># 1. Herramientas de sistema y Terraform
+brew install terraform make jq curl openssl
+
+# 2. Podman (recomendado) y compose
+brew install podman podman-compose
+podman machine init --cpus 4 --memory 4096
+podman machine start
+
+# Alternativa: si utilizás Docker Desktop
+# brew install --cask docker</pre>
+
+      <div class="code-label">Verificación rápida</div>
+      <pre class="out">terraform version
+make -v
+podman info  # o docker info</pre>
+    </div>
+
+    <!-- Tab 2: Windows -->
+    <div class="tab-pane" id="tab-win">
+      <h4>Instalación en Windows (Opción Recomendada: WSL2 Ubuntu)</h4>
+      <p>La forma más fluida y compatible de ejecutar el laboratorio en Windows es a través de <strong>WSL2 (Windows Subsystem for Linux)</strong>:</p>
+
+      <div class="code-label">PowerShell (como Administrador)</div>
+      <pre># Instalar WSL2 con Ubuntu (reinicia si te lo solicita)
+wsl --install -d Ubuntu</pre>
+
+      <p>Una vez dentro de tu terminal de WSL2 (Ubuntu):</p>
+      <div class="code-label">Terminal WSL2 Ubuntu</div>
+      <pre># 1. Actualizar e instalar herramientas base
+sudo apt update && sudo apt install -y make curl jq openssl podman podman-compose
+
+# 2. Instalar Terraform (repositorio oficial HashiCorp)
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install -y terraform</pre>
+
+      <h4>Opción Nativa en Windows (winget)</h4>
+      <p>Si ejecutás directamente en Windows, instalá los paquetes con Windows Package Manager y utilizá <strong>Git Bash</strong> para ejecutar los comandos <code>make</code>:</p>
+      <div class="code-label">PowerShell</div>
+      <pre>winget install HashiCorp.Terraform
+winget install RedHat.Podman
+winget install GnuWin32.Make
+winget install jqlang.jq
+winget install Git.Git</pre>
+    </div>
+
+    <!-- Tab 3: Linux -->
+    <div class="tab-pane" id="tab-linux">
+      <h4>Instalación en distribuciones Linux</h4>
+
+      <p><strong>Ubuntu / Debian:</strong></p>
+      <div class="code-label">Terminal Ubuntu / Debian</div>
+      <pre># 1. Herramientas base y Podman
+sudo apt update && sudo apt install -y make curl jq openssl podman podman-compose
+
+# 2. Terraform
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install -y terraform</pre>
+
+      <p><strong>RHEL / Fedora / CentOS Stream:</strong></p>
+      <div class="code-label">Terminal RHEL / Fedora</div>
+      <pre># 1. Herramientas base y Podman
+sudo dnf install -y make curl jq openssl podman podman-compose
+
+# 2. Terraform
+sudo dnf install -y dnf-plugins-core
+sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+sudo dnf install -y terraform</pre>
+    </div>
+
+    <h4>Requisitos de Cuenta Confluent Cloud y Puertos</h4>
+    <ul>
+      <li><strong>Cuenta Confluent Cloud:</strong> API Key y Secret de tipo <em>Cloud Resource Management</em> creada desde <em>Confluent Cloud &gt; Menú superior derecho &gt; API keys &gt; Add API key &gt; Cloud resource management</em> (requiere rol OrganizationAdmin para crear entornos y service accounts).</li>
+      <li><strong>Puertos locales libres:</strong> Comprobá que los puertos <code>5432</code> (Postgres), <code>8083</code> (Connect), <code>8080</code> (UI Solicitudes) y <code>8081</code> (Dashboard) no estén ocupados por otros servicios locales.</li>
+    </ul>
 
     <div class="note warn">
       <span class="label">Aviso sobre costes en Confluent Cloud</span>
-      <p>El aprovisionamiento de clústeres y compute pools de Flink genera consumo en tu cuenta de Confluent Cloud mientras se encuentren activos. Al finalizar el laboratorio, ejecutá siempre <code class="inline">make destroy</code> para dar de baja todos los recursos.</p>
+      <p>El aprovisionamiento de clústeres y compute pools de Flink genera consumo en tu cuenta de Confluent Cloud mientras se encuentren activos. Al finalizar el laboratorio, ejecutá siempre <code>make destroy</code> para dar de baja todos los recursos.</p>
     </div>
   </section>
 
@@ -449,22 +565,22 @@ Demo Producer ───────   [Tópico: loan-decisions]
     <p>Una vez descargado, descomprimilo en tu directorio de trabajo y accedé a la carpeta:</p>
 
     <div class="code-label">Terminal</div>
-    <pre><code>unzip banking-streaming-asset.zip
-cd banking-streaming-asset</code></pre>
+    <pre>unzip banking-streaming-asset.zip
+cd banking-streaming-asset</pre>
   </section>
 
   <!-- ===================== 8. CONFIGURAR CREDENCIALES ===================== -->
   <section id="credenciales">
     <h2>8. Configurar credenciales</h2>
-    <p>El asset incluye un script de inicialización que genera de forma segura tu archivo <code class="inline">.env</code> con contraseñas aleatorias para PostgreSQL y permisos restrictivos (<code class="inline">chmod 600</code>):</p>
+    <p>El asset incluye un script de inicialización que genera de forma segura tu archivo <code>.env</code> con contraseñas aleatorias para PostgreSQL y permisos restrictivos (<code>chmod 600</code>):</p>
 
     <div class="code-label">Terminal</div>
-    <pre><code>make init</code></pre>
+    <pre>make init</pre>
 
-    <p>A continuación, abrí el archivo <code class="inline">.env</code> con tu editor de texto y completá tus credenciales de Confluent Cloud:</p>
+    <p>A continuación, abrí el archivo <code>.env</code> con tu editor de texto y completá tus credenciales de Confluent Cloud:</p>
 
     <div class="code-label">Archivo .env</div>
-    <pre><code># --- Confluent Cloud (OBLIGATORIO) -------------------------------------------
+    <pre># --- Confluent Cloud (OBLIGATORIO) -------------------------------------------
 # Cloud API key (NO es una API key de clúster). Créala en:
 #   Confluent Cloud > menú superior derecha > API keys > Add API key > Cloud resource management
 CONFLUENT_CLOUD_API_KEY="TU_API_KEY_AQUI"
@@ -486,12 +602,12 @@ CONNECT_PORT=8083
 
 # Generadas automáticamente por make init:
 POSTGRES_PASSWORD="[generada-automáticamente]"
-CDC_PASSWORD="[generada-automáticamente]"</code></pre>
+CDC_PASSWORD="[generada-automáticamente]"</pre>
 
     <div class="note tip">
       <span class="label">Diferencia entre .env y .env.runtime</span>
-      <p><strong><code class="inline">.env</code></strong> contiene tus variables de entrada (credenciales de Cloud, región, puertos).<br>
-      <strong><code class="inline">.env.runtime</code></strong> es generado automáticamente por Terraform durante el despliegue con los endpoints del clúster y las API keys específicas de cada servicio. <em>Nunca debés editar .env.runtime a mano.</em></p>
+      <p><strong><code>.env</code></strong> contiene tus variables de entrada (credenciales de Cloud, región, puertos).<br>
+      <strong><code>.env.runtime</code></strong> es generado automáticamente por Terraform durante el despliegue con los endpoints del clúster y las API keys específicas de cada servicio. <em>Nunca debés editar .env.runtime a mano.</em></p>
     </div>
   </section>
 
@@ -501,7 +617,7 @@ CDC_PASSWORD="[generada-automáticamente]"</code></pre>
     <p>Antes de lanzar la infraestructura, ejecutá la validación automatizada para comprobar que todo está listo:</p>
 
     <div class="code-label">Terminal</div>
-    <pre><code>make check</code></pre>
+    <pre>make check</pre>
 
     <p>La salida esperada confirmará cada una de las comprobaciones sin crear ningún recurso todavía:</p>
 
@@ -537,12 +653,12 @@ CDC_PASSWORD="[generada-automáticamente]"</code></pre>
     <p>Este es el comando principal del laboratorio. Ejecuta de forma secuencial y coordinada toda la infraestructura cloud, los contenedores locales, la captura CDC y Flink SQL:</p>
 
     <div class="code-label">Terminal</div>
-    <pre><code>make up</code></pre>
+    <pre>make up</pre>
 
     <h4>Secuencia de ejecución de make up</h4>
     <ol class="steps">
-      <li><strong>cloud-up (~45-60 s):</strong> Terraform crea el entorno en Confluent Cloud, el clúster Kafka, Schema Registry, los tópicos, las Service Accounts, ACLs y el Compute Pool de Flink. Luego genera el archivo <code class="inline">.env.runtime</code>.</li>
-      <li><strong>local-up (~20-30 s):</strong> Compose compila y levanta los contenedores (<code class="inline">postgres</code>, <code class="inline">connect</code>, <code class="inline">frontend-requests</code> en el puerto 8080 y <code class="inline">frontend-dashboard</code> en el puerto 8081). Se registra el conector Debezium y se verifica que esté en estado <code>RUNNING</code>.</li>
+      <li><strong>cloud-up (~45-60 s):</strong> Terraform crea el entorno en Confluent Cloud, el clúster Kafka, Schema Registry, los tópicos, las Service Accounts, ACLs y el Compute Pool de Flink. Luego genera el archivo <code>.env.runtime</code>.</li>
+      <li><strong>local-up (~20-30 s):</strong> Compose compila y levanta los contenedores (<code>postgres</code>, <code>connect</code>, <code>frontend-requests</code> en el puerto 8080 y <code>frontend-dashboard</code> en el puerto 8081). Se registra el conector Debezium y se verifica que esté en estado <code>RUNNING</code>.</li>
       <li><strong>flink-up (~15-20 s):</strong> Se definen las Primary Keys de las tablas CDC y se aplican las sentencias persistentes de Flink SQL (agregación de estadísticas y scoring de decisiones).</li>
     </ol>
 
@@ -555,15 +671,15 @@ CDC_PASSWORD="[generada-automáticamente]"</code></pre>
   <!-- ===================== 11. EXPLORAR CONFLUENT CLOUD ===================== -->
   <section id="confluent-ui">
     <h2>11. Explorar Confluent Cloud</h2>
-    <p>Ingresá a la consola web de <a href="https://confluent.cloud" target="_blank" rel="noopener">Confluent Cloud</a> y seleccioná el entorno <code class="inline">banking-streaming-env</code>:</p>
+    <p>Ingresá a la consola web de <a href="https://confluent.cloud" target="_blank" rel="noopener">Confluent Cloud</a> y seleccioná el entorno <code>banking-streaming-env</code>:</p>
 
     <ol class="steps">
-      <li><strong>Topics:</strong> Verificá la presencia de los tópicos <code class="inline">customers</code> y <code class="inline">payment_history</code> (poblados por CDC desde PostgreSQL), <code class="inline">loan-requests</code> (solicitudes en formato Avro) y <code class="inline">loan-decisions</code> (decisiones generadas por Flink).</li>
-      <li><strong>Schema Registry:</strong> Inspeccioná el esquema registrado en el sujeto <code class="inline">loan-requests-value</code>, que valida tipos lógicos como <code class="inline">decimal(12,2)</code> y <code class="inline">timestamp-millis</code>.</li>
+      <li><strong>Topics:</strong> Verificá la presencia de los tópicos <code>customers</code> y <code>payment_history</code> (poblados por CDC desde PostgreSQL), <code>loan-requests</code> (solicitudes en formato Avro) y <code>loan-decisions</code> (decisiones generadas por Flink).</li>
+      <li><strong>Schema Registry:</strong> Inspeccioná el esquema registrado en el sujeto <code>loan-requests-value</code>, que valida tipos lógicos como <code>decimal(12,2)</code> y <code>timestamp-millis</code>.</li>
       <li><strong>Flink:</strong> Hacé clic en la sección <strong>Flink</strong> de tu entorno para observar las sentencias persistentes en estado <em>Running</em>:
         <ul>
-          <li><code class="inline">banking-streaming-dml-customer-payment-stats</code></li>
-          <li><code class="inline">banking-streaming-dml-loan-decisions</code></li>
+          <li><code>banking-streaming-dml-customer-payment-stats</code></li>
+          <li><code>banking-streaming-dml-loan-decisions</code></li>
         </ul>
       </li>
     </ol>
@@ -581,10 +697,10 @@ CDC_PASSWORD="[generada-automáticamente]"</code></pre>
 
     <div class="note">
       <span class="label">Separación de responsabilidades y latencia de decisión</span>
-      <p><strong>UI de Solicitudes (:8080):</strong> Su función es exclusivamente validar el formulario y confirmar la publicación del evento en Kafka respondiendo <code class="inline">202 Accepted</code>. No calcula ni muestra la decisión del crédito.</p>
+      <p><strong>UI de Solicitudes (:8080):</strong> Su función es exclusivamente validar el formulario y confirmar la publicación del evento en Kafka respondiendo <code>202 Accepted</code>. No calcula ni muestra la decisión del crédito.</p>
       <p><strong>Procesamiento en Flink:</strong> Flink procesa la solicitud mediante un <em>temporal join</em> contra el perfil del cliente y estadísticas de pago. En las pruebas del asset, la decisión se emite habitualmente en <strong>5 a 10 segundos</strong>.</p>
-      <p><strong>Optimización de particiones inactivas:</strong> Esta rapidez se logra configurando <code class="inline">sql.tables.scan.idle-timeout = '5 s'</code> en la sentencia <code class="inline">dml-loan-decisions</code>, lo que evita que las particiones sin tráfico detengan el avance del watermark del join.</p>
-      <p><strong>Dashboard (:8081):</strong> Consume las decisiones desde el tópico <code class="inline">loan-decisions</code> y actualiza métricas y gráficos en vivo.</p>
+      <p><strong>Optimización de particiones inactivas:</strong> Esta rapidez se logra configurando <code>sql.tables.scan.idle-timeout = '5 s'</code> en la sentencia <code>dml-loan-decisions</code>, lo que evita que las particiones sin tráfico detengan el avance del watermark del join.</p>
+      <p><strong>Dashboard (:8081):</strong> Consume las decisiones desde el tópico <code>loan-decisions</code> y actualiza métricas y gráficos en vivo.</p>
     </div>
   </section>
 
@@ -667,13 +783,13 @@ Desglose:    DTI Ratio 100.7% (0 pts) + Con impagos (0 pts) + 1a Antigüedad (5 
     <p>Para simular el volumen continuo de un banco en producción, iniciá el generador de tráfico en segundo plano:</p>
 
     <div class="code-label">Terminal</div>
-    <pre><code>make demo-traffic</code></pre>
+    <pre>make demo-traffic</pre>
 
     <p>Este proceso automático:</p>
     <ul>
-      <li>Ejecuta el contenedor <code class="inline">producer-java</code> en modo continuo.</li>
+      <li>Ejecuta el contenedor <code>producer-java</code> en modo continuo.</li>
       <li>Emite <strong>1 solicitud cada 10 segundos</strong> (~6 solicitudes/minuto) alternando entre los clientes 1001 a 1050 del seed.</li>
-      <li>Genera identificadores únicos <code class="inline">request_id</code> y valida los esquemas Avro en Schema Registry.</li>
+      <li>Genera identificadores únicos <code>request_id</code> y valida los esquemas Avro en Schema Registry.</li>
     </ul>
 
     <p>Observá cómo se actualizan simultáneamente los tópicos en Confluent Cloud, el procesamiento de Flink y los gráficos del Dashboard.</p>
@@ -681,7 +797,7 @@ Desglose:    DTI Ratio 100.7% (0 pts) + Con impagos (0 pts) + 1a Antigüedad (5 
     <p>Cuando desees detener el tráfico automático, ejecutá:</p>
 
     <div class="code-label">Terminal</div>
-    <pre><code>make demo-traffic-stop</code></pre>
+    <pre>make demo-traffic-stop</pre>
   </section>
 
   <!-- ===================== 16. OBSERVAR EL DASHBOARD ===================== -->
@@ -717,7 +833,7 @@ Desglose:    DTI Ratio 100.7% (0 pts) + Con impagos (0 pts) + 1a Antigüedad (5 
       <li><strong>Confluent Cloud</strong> transportó y almacenó los eventos en tópicos seguros y particionados.</li>
       <li><strong>Schema Registry</strong> gobernó el contrato de datos mediante el esquema Avro de las solicitudes.</li>
       <li><strong>Flink SQL</strong> mantuvo estadísticas acumuladas en streaming y ejecutó un <em>temporal join</em> al milisegundo.</li>
-      <li><strong>El motor de reglas</strong> evaluó la puntuación y escribió la decisión en el tópico <code class="inline">loan-decisions</code>.</li>
+      <li><strong>El motor de reglas</strong> evaluó la puntuación y escribió la decisión en el tópico <code>loan-decisions</code>.</li>
       <li><strong>El Dashboard</strong> consumió las decisiones y actualizó los indicadores operacionales en tiempo real.</li>
       <li><strong>Terraform y Make</strong> permitieron aprovisionar, ejecutar y gobernar toda esta arquitectura con reproducibilidad absoluta.</li>
     </ol>
@@ -729,15 +845,15 @@ Desglose:    DTI Ratio 100.7% (0 pts) + Con impagos (0 pts) + 1a Antigüedad (5 
     <p>Al concluir las pruebas del laboratorio, eliminá todos los recursos creados para evitar costes innecesarios:</p>
 
     <div class="code-label">Terminal</div>
-    <pre><code># 1. Detener el tráfico de demo si sigue activo
+    <pre># 1. Detener el tráfico de demo si sigue activo
 make demo-traffic-stop
 
 # 2. Destruir los contenedores locales y TODOS los recursos de Confluent Cloud
-make destroy</code></pre>
+make destroy</pre>
 
     <div class="note danger">
       <span class="label">Importante: Control de costes en la nube</span>
-      <p>El comando <code class="inline">make destroy</code> ejecuta <code class="inline">scripts/down.sh all</code>, que baja los contenedores locales, elimina los volúmenes de datos, destruye las sentencias de Flink y ejecuta <code class="inline">terraform destroy</code> para desaprovisionar el clúster Kafka, Schema Registry, service accounts y entorno en Confluent Cloud.</p>
+      <p>El comando <code>make destroy</code> ejecuta <code>scripts/down.sh all</code>, que baja los contenedores locales, elimina los volúmenes de datos, destruye las sentencias de Flink y ejecuta <code>terraform destroy</code> para desaprovisionar el clúster Kafka, Schema Registry, service accounts y entorno en Confluent Cloud.</p>
     </div>
   </section>
 
@@ -760,6 +876,26 @@ make destroy</code></pre>
 
 <script>
 (function () {
+  // Tabs switcher para sistemas operativos
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var targetId = btn.getAttribute('data-tab');
+      tabBtns.forEach(function (b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.tab-pane').forEach(function (pane) {
+        pane.classList.remove('active');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      var targetPane = document.getElementById(targetId);
+      if (targetPane) targetPane.classList.add('active');
+    });
+  });
+
+  // Botón de copia
   var copyIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M28 10v18H10V10h18m0-2H10a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2z"/><path d="M4 18H2V4a2 2 0 0 1 2-2h14v2H4z"/></svg>';
   var checkIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M13 24l-9-9 1.414-1.414L13 21.171 26.586 7.586 28 9 13 24z"/></svg>';
   var failIcon  = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M24 9.4L22.6 8 16 14.6 9.4 8 8 9.4l6.6 6.6L8 22.6 9.4 24l6.6-6.6 6.6 6.6 1.4-1.4-6.6-6.6z"/></svg>';
