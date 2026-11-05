@@ -1,971 +1,474 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Banking Real-Time Loan Decisions with Confluent — Hands-On Lab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio Hands-On: Banking Real-Time Loan Decisions with Confluent</title>
 <style>
+  /* ---------- Tokens estilo IBM Carbon (tema White) ---------- */
   :root {
-    --bg-page: #f8fafc;
-    --bg-card: #ffffff;
-    --bg-sidebar: #ffffff;
-    --bg-header: #0f172a;
-    --header-text: #f8fafc;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --border-color: #e2e8f0;
-    --border-strong: #cbd5e1;
-    --accent: #0284c7;
-    --accent-hover: #0369a1;
-    --accent-light: #e0f2fe;
-    --brand-confluent: #0072ce;
-    --brand-confluent-dark: #00509d;
-    --success: #16a34a;
-    --success-bg: #dcfce7;
-    --warning: #d97706;
-    --warning-bg: #fef3c7;
-    --danger: #dc2626;
-    --danger-bg: #fee2e2;
-    --code-bg: #0f172a;
-    --code-text: #f1f5f9;
-    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-    --sidebar-w: 280px;
-    --header-h: 60px;
+    --bg: #ffffff;
+    --layer: #f4f4f4;
+    --layer-hover: #e8e8e8;
+    --border: #e0e0e0;
+    --border-strong: #8d8d8d;
+    --text: #161616;
+    --text-secondary: #525252;
+    --text-helper: #6f6f6f;
+    --blue-60: #0f62fe;
+    --blue-70: #0043ce;
+    --gray-100: #161616;
+    --gray-90: #262626;
+    --gray-80: #393939;
+    --green-50: #24a148;
+    --yellow-30: #f1c21b;
+    --red-60: #da1e28;
+    --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --header-h: 48px;
+    --nav-w: 17rem;
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 24px); }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
   body {
-    font-family: var(--font-sans);
-    background-color: var(--bg-page);
-    color: var(--text-primary);
-    line-height: 1.6;
-    font-size: 15px;
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-sans); font-size: 16px; line-height: 1.5; letter-spacing: 0;
   }
 
-  /* Header */
-  header.top-bar {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: var(--header-h);
-    background: var(--bg-header);
-    color: var(--header-text);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1.5rem;
-    z-index: 1000;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  /* ---------- UI Shell: header ---------- */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+    background: var(--gray-100); color: #f4f4f4; display: flex; align-items: center;
+    z-index: 100; border-bottom: 1px solid var(--gray-80);
   }
-  .brand-area {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1rem;
-    font-weight: 600;
+  .header .brand { padding: 0 1rem; font-size: 14px; letter-spacing: .16px; white-space: nowrap; }
+  .header .brand strong { font-weight: 600; }
+  .header .sep { width: 1px; height: 24px; background: var(--gray-80); }
+  .header .title { padding: 0 1rem; font-size: 14px; color: #c6c6c6; }
+  .header .btn-header-download {
+    margin-left: auto; margin-right: 1rem; display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--blue-60); color: #fff; text-decoration: none; font-size: 13px; font-weight: 600;
+    padding: .35rem .85rem; border-radius: 4px; transition: background .15s;
   }
-  .brand-badge {
-    background: linear-gradient(135deg, #0072ce, #0284c7);
-    color: white;
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+  .header .btn-header-download:hover { background: var(--blue-70); }
+
+  /* ---------- Side nav ---------- */
+  .sidenav {
+    position: fixed; top: var(--header-h); bottom: 0; left: 0; width: var(--nav-w);
+    background: var(--bg); border-right: 1px solid var(--border); overflow-y: auto; padding: 1rem 0;
   }
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+  .sidenav .group { padding: .75rem 1rem .25rem; font-size: 12px; color: var(--text-helper); text-transform: uppercase; letter-spacing: .32px; font-weight: 600; }
+  .sidenav a {
+    display: block; padding: .45rem 1rem .45rem 1.5rem; font-size: 13.5px; color: var(--text-secondary);
+    text-decoration: none; border-left: 3px solid transparent; line-height: 1.3;
   }
-  .btn-download {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--brand-confluent);
-    color: white;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.875rem;
-    padding: 0.45rem 1rem;
-    border-radius: 6px;
-    transition: background 0.2s, transform 0.1s;
-    border: 1px solid rgba(255,255,255,0.2);
-  }
-  .btn-download:hover {
-    background: var(--accent-hover);
-    transform: translateY(-1px);
-  }
-  .btn-download:active {
-    transform: translateY(0);
+  .sidenav a:hover { background: var(--layer-hover); color: var(--text); }
+  .sidenav a.active { background: var(--layer); color: var(--text); border-left-color: var(--blue-60); font-weight: 600; }
+  .sidenav a.top { padding-left: 1rem; color: var(--text); font-weight: 600; }
+
+  /* ---------- Contenido ---------- */
+  main { margin-left: var(--nav-w); padding: calc(var(--header-h) + 2rem) 3rem 4rem; max-width: calc(72rem + var(--nav-w)); }
+  .breadcrumb { font-size: 14px; color: var(--text-helper); margin-bottom: 1rem; }
+  .breadcrumb a { color: var(--blue-60); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 { font-size: 40px; font-weight: 300; line-height: 1.19; margin: 0 0 1rem; }
+  h2 { font-size: 28px; font-weight: 400; line-height: 1.25; margin: 3.5rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-strong); }
+  h3 { font-size: 19px; font-weight: 600; line-height: 1.4; margin: 2rem 0 .75rem; display: flex; align-items: center; gap: .75rem; }
+  h4 { font-size: 15px; font-weight: 600; margin: 1.5rem 0 .5rem; }
+  p { margin: 0 0 1rem; max-width: 48rem; }
+  .lead { font-size: 19px; line-height: 1.45; color: var(--text-secondary); max-width: 48rem; margin-bottom: 2rem; }
+  a { color: var(--blue-60); }
+  a:hover { color: var(--blue-70); }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.5rem; max-width: 48rem; }
+  li { margin-bottom: .5rem; }
+  code {
+    font-family: var(--font-mono); font-size: 13.5px; background: var(--layer); padding: 2px 6px;
+    border-bottom: 1px solid var(--border);
   }
 
-  /* Layout */
-  .layout {
-    display: flex;
-    margin-top: var(--header-h);
-    min-height: calc(100vh - var(--header-h));
+  /* Etiqueta de paso */
+  .step-tag {
+    display: inline-block; background: var(--blue-60); color: #fff; font-size: 12px; font-weight: 600;
+    padding: 2px 10px; border-radius: 24px; letter-spacing: .32px;
+  }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 24px; background: #d0e2ff; color: #002d9c; margin-right: .5rem; font-weight: 500; }
+  .tag.gray { background: #e0e0e0; color: #161616; }
+  .tag.green { background: #a7f0ba; color: #044317; }
+  .tag.red { background: #ffd7d9; color: #750e13; }
+
+  /* Pasos numerados estilo Carbon */
+  ol.steps { list-style: none; counter-reset: s; padding-left: 0; }
+  ol.steps > li { counter-increment: s; position: relative; padding-left: 2.5rem; margin-bottom: .875rem; }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: 0; width: 1.5rem; height: 1.5rem;
+    border: 1px solid var(--border-strong); border-radius: 50%; font-size: 12px; text-align: center; line-height: 1.4rem; color: var(--text-secondary); font-weight: 600;
   }
 
-  /* Sidebar */
-  aside.sidebar {
-    width: var(--sidebar-w);
-    background: var(--bg-sidebar);
-    border-right: 1px solid var(--border-color);
-    position: fixed;
-    top: var(--header-h);
-    bottom: 0;
-    left: 0;
-    overflow-y: auto;
-    padding: 1.25rem 0.5rem;
-    z-index: 100;
-  }
-  .nav-group-title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    letter-spacing: 0.5px;
-    padding: 0.5rem 0.75rem;
-    margin-top: 0.5rem;
-  }
-  .nav-group-title:first-child { margin-top: 0; }
-  .nav-item {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    padding: 0.45rem 0.75rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.85rem;
-    border-radius: 6px;
-    line-height: 1.35;
-    transition: all 0.15s;
-  }
-  .nav-item:hover {
-    background: var(--accent-light);
-    color: var(--accent-hover);
-  }
-  .nav-item.active {
-    background: var(--accent-light);
-    color: var(--brand-confluent-dark);
-    font-weight: 600;
-    border-left: 3px solid var(--brand-confluent);
-  }
-  .nav-num {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    min-width: 1.2rem;
-  }
+  /* Notificaciones inline */
+  .note { max-width: 48rem; margin: 1.25rem 0 1.5rem; padding: .85rem 1.15rem; background: var(--layer); border-left: 4px solid var(--blue-60); font-size: 14px; }
+  .note .label { display: block; font-weight: 600; margin-bottom: .35rem; }
+  .note.warn { border-left-color: var(--yellow-30); background: #fcf4d6; }
+  .note.danger { border-left-color: var(--red-60); background: #fff1f1; }
+  .note.tip { border-left-color: var(--green-50); background: #defbe6; }
+  .note.theory { border-left-color: #8a3ffc; background: #f6f2ff; }
+  .note p:last-child { margin-bottom: 0; }
 
-  /* Main Content */
-  main.content {
-    margin-left: var(--sidebar-w);
-    padding: 2.5rem 3.5rem 5rem;
-    max-width: 960px;
-    width: 100%;
-  }
+  /* Tablas */
+  table { border-collapse: collapse; width: 100%; max-width: 48rem; margin: 0 0 1.5rem; font-size: 14px; }
+  thead th { background: #e0e0e0; text-align: left; padding: .75rem 1rem; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border-strong); }
+  tbody td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); background: var(--layer); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: var(--bg); }
+  td:first-child { font-weight: 600; }
 
-  /* Hero Section */
-  .hero-card {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: white;
-    padding: 2.5rem;
-    border-radius: 12px;
-    margin-bottom: 2.5rem;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-  }
-  .hero-badge {
-    display: inline-block;
-    background: rgba(2, 132, 199, 0.3);
-    color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.4);
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    margin-bottom: 1rem;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  .hero-card h1 {
-    font-size: 2.25rem;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 0.75rem;
-    letter-spacing: -0.5px;
-  }
-  .hero-card .subtitle {
-    font-size: 1.15rem;
-    color: #94a3b8;
-    line-height: 1.5;
-    margin-bottom: 1.5rem;
-  }
-  .hero-highlight {
-    background: rgba(255, 255, 255, 0.08);
-    border-left: 4px solid #38bdf8;
-    padding: 0.875rem 1.25rem;
-    border-radius: 0 8px 8px 0;
-    font-size: 0.95rem;
-    color: #e2e8f0;
-    font-style: italic;
-  }
-
-  /* Section Styling */
-  section.lab-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-  }
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-  }
-  .section-badge {
-    background: var(--brand-confluent);
-    color: white;
-    font-size: 0.85rem;
-    font-weight: 700;
-    padding: 0.2rem 0.6rem;
-    border-radius: 6px;
-  }
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.3px;
-  }
-  h3 {
-    font-size: 1.15rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 1.5rem 0 0.75rem;
-  }
-  h4 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin: 1rem 0 0.5rem;
-  }
-  p {
-    margin-bottom: 1rem;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-  }
-  p:last-child { margin-bottom: 0; }
-  strong { color: var(--text-primary); }
-
-  /* Callouts */
-  .callout {
-    padding: 1rem 1.25rem;
-    border-radius: 8px;
-    margin: 1.25rem 0;
-    display: flex;
-    gap: 0.875rem;
-    font-size: 0.92rem;
-    line-height: 1.5;
-  }
-  .callout-icon {
-    font-size: 1.2rem;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-  .callout-content { flex: 1; }
-  .callout-content strong { display: block; margin-bottom: 0.25rem; }
-  .callout.info {
-    background: var(--accent-light);
-    border-left: 4px solid var(--accent);
-    color: #0369a1;
-  }
-  .callout.info strong { color: #075985; }
-  .callout.tip {
-    background: var(--success-bg);
-    border-left: 4px solid var(--success);
-    color: #15803d;
-  }
-  .callout.tip strong { color: #166534; }
-  .callout.warning {
-    background: var(--warning-bg);
-    border-left: 4px solid var(--warning);
-    color: #b45309;
-  }
-  .callout.warning strong { color: #92400e; }
-  .callout.danger {
-    background: var(--danger-bg);
-    border-left: 4px solid var(--danger);
-    color: #b91c1c;
-  }
-  .callout.danger strong { color: #991b1b; }
-
-  /* Code Blocks */
-  .code-block {
-    position: relative;
-    background: var(--code-bg);
-    border-radius: 8px;
-    margin: 1rem 0;
-    overflow: hidden;
-  }
-  .code-header {
-    background: #1e293b;
-    padding: 0.5rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    color: #94a3b8;
-    border-bottom: 1px solid #334155;
-  }
-  .copy-btn {
-    background: #334155;
-    color: #e2e8f0;
-    border: none;
-    border-radius: 4px;
-    padding: 0.25rem 0.6rem;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-family: var(--font-sans);
-  }
-  .copy-btn:hover { background: #475569; }
+  /* Bloques de código (Gray 90) */
   pre {
-    padding: 1rem 1.25rem;
-    overflow-x: auto;
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    color: var(--code-text);
-    line-height: 1.5;
+    background: var(--gray-90); color: #f4f4f4; font-family: var(--font-mono); font-size: 13.5px; line-height: 1.5;
+    padding: 1rem 1.25rem; overflow-x: auto; margin: 0 0 1.5rem; max-width: 48rem; border-left: 3px solid var(--blue-60);
   }
-  code.inline {
-    font-family: var(--font-mono);
-    font-size: 0.85em;
-    background: #f1f5f9;
-    color: #0f172a;
-    padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
+  pre.out { background: var(--layer); color: var(--text); border-left-color: var(--border-strong); }
+  .code-label { font-size: 12px; color: var(--text-helper); letter-spacing: .32px; text-transform: uppercase; margin-bottom: .25rem; font-weight: 600; }
+  .code-wrap { position: relative; max-width: 48rem; margin: 0 0 1.5rem; }
+  .code-wrap pre { margin: 0; max-width: none; padding-right: 3.5rem; }
+  .copy-btn {
+    position: absolute; top: .5rem; right: .5rem; display: inline-flex; align-items: center; justify-content: center;
+    width: 2rem; height: 2rem; padding: 0; background: #393939; color: #f4f4f4; border: 0; cursor: pointer;
   }
+  .copy-btn svg { width: 16px; height: 16px; fill: currentColor; display: block; }
+  .copy-btn:hover { background: #4c4c4c; }
+  .copy-btn:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+  .copy-btn.copied { color: #42be65; }
+  .copy-btn.failed { color: #fa4d56; }
+  .kw { color: #78a9ff; } .str { color: #42be65; } .cm { color: #8d8d8d; }
 
-  /* Tables */
-  .table-wrapper {
-    overflow-x: auto;
-    margin: 1.25rem 0;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+  /* Botón de acción Carbon */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: .75rem; background: var(--blue-60); color: #fff;
+    padding: .85rem 1.5rem; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 0;
+    transition: background .15s; margin: 1rem 0 1.5rem;
   }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-    text-align: left;
-  }
-  th {
-    background: #f8fafc;
-    color: var(--text-primary);
-    font-weight: 600;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-  }
-  td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-secondary);
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:nth-child(even) td { background: #fafafa; }
+  .btn-primary:hover { background: var(--blue-70); }
 
-  /* Diagram Box */
-  .diagram-box {
-    background: #f8fafc;
-    border: 1px solid var(--border-strong);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin: 1.5rem 0;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    overflow-x: auto;
-    line-height: 1.45;
-    color: #1e293b;
-  }
+  footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-helper); }
 
-  /* Visual Architecture Cards */
-  .arch-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
+  @media (max-width: 900px) {
+    .sidenav { display: none; }
+    main { margin-left: 0; padding: calc(var(--header-h) + 1.5rem) 1.25rem 3rem; }
+    h1 { font-size: 32px; }
   }
-  .arch-card {
-    background: #f8fafc;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-  }
-  .arch-card h4 {
-    margin-top: 0;
-    color: var(--brand-confluent);
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .arch-card p {
-    font-size: 0.85rem;
-    margin-bottom: 0;
-    color: var(--text-secondary);
-  }
-
-  /* Status Pills */
-  .pill {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-  .pill.approved { background: var(--success-bg); color: var(--success); }
-  .pill.rejected { background: var(--danger-bg); color: var(--danger); }
-  .pill.score { background: #f1f5f9; color: var(--text-primary); border: 1px solid var(--border-strong); }
-
-  /* Download Banner */
-  .download-banner {
-    background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
-    border: 1px solid #bfdbfe;
-    border-radius: 10px;
-    padding: 1.75rem;
-    text-align: center;
-    margin: 1.5rem 0;
-  }
-  .download-banner h3 {
-    margin: 0 0 0.5rem;
-    color: #1e3a8a;
-    font-size: 1.25rem;
-  }
-  .download-banner p {
-    color: #3b82f6;
-    margin-bottom: 1.25rem;
-    font-size: 0.95rem;
-  }
-  .btn-download-large {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    background: var(--brand-confluent);
-    color: white;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 1rem;
-    padding: 0.75rem 1.75rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 114, 206, 0.2);
-    transition: all 0.2s;
-  }
-  .btn-download-large:hover {
-    background: var(--accent-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px -1px rgba(0, 114, 206, 0.3);
-  }
-
-  /* Footer */
-  footer {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-  }
-
-  /* Responsive */
-  @media (max-width: 992px) {
-    aside.sidebar { display: none; }
-    main.content { margin-left: 0; padding: 1.5rem 1rem 4rem; }
-  }
+  @media print { .header, .sidenav { display: none; } main { margin: 0; padding: 0; } }
 </style>
 </head>
 <body>
 
-<!-- Header -->
-<header class="top-bar">
-  <div class="brand-area">
-    <span class="brand-badge">Confluent Workshop</span>
-    <span>Banking Real-Time Loan Decisions</span>
-  </div>
-  <div class="header-actions">
-    <a href="./banking-streaming-asset.zip" class="btn-download" download="banking-streaming-asset.zip">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-      Download Lab Files
-    </a>
-  </div>
+<header class="header">
+  <div class="brand">IBM&nbsp;<strong>Laboratorio Hands-On</strong></div>
+  <div class="sep"></div>
+  <div class="title">Banking Real-Time Loan Decisions with Confluent</div>
+  <a href="./banking-streaming-asset.zip" class="btn-header-download" download="banking-streaming-asset.zip">
+    <svg width="14" height="14" viewBox="0 0 32 32" fill="#fff" aria-hidden="true"><path d="M26 24v4H6v-4H4v4a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2v-4z"/><path d="M26 14l-1.41-1.41L17 20.17V2h-2v18.17l-7.59-7.58L6 14l10 10 10-10z"/></svg>
+    Descargar Lab ZIP
+  </a>
 </header>
 
-<div class="layout">
-  <!-- Sticky Sidebar Navigation -->
-  <aside class="sidebar" id="sidebar">
-    <div class="nav-group-title">Overview</div>
-    <a href="#sec-1" class="nav-item active"><span class="nav-num">1</span> Introduction</a>
-    <a href="#sec-2" class="nav-item"><span class="nav-num">2</span> What are we building?</a>
-    <a href="#sec-3" class="nav-item"><span class="nav-num">3</span> Architecture</a>
-    <a href="#sec-4" class="nav-item"><span class="nav-num">4</span> Infrastructure as Code</a>
-    <a href="#sec-5" class="nav-item"><span class="nav-num">5</span> What gets deployed?</a>
+<nav class="sidenav" aria-label="Contenido del Laboratorio">
+  <a class="top" href="#intro">1. Introducción</a>
+  <a href="#construir">2. ¿Qué vamos a construir?</a>
+  <a href="#arquitectura">3. Arquitectura</a>
+  <a href="#iac">4. Infrastructure as Code</a>
+  <a href="#recursos">5. ¿Qué recursos se despliegan?</a>
 
-    <div class="nav-group-title">Setup & Deployment</div>
-    <a href="#sec-6" class="nav-item"><span class="nav-num">6</span> Prerequisites</a>
-    <a href="#sec-7" class="nav-item"><span class="nav-num">7</span> Download the lab</a>
-    <a href="#sec-8" class="nav-item"><span class="nav-num">8</span> Configure credentials</a>
-    <a href="#sec-9" class="nav-item"><span class="nav-num">9</span> Validate environment</a>
-    <a href="#sec-10" class="nav-item"><span class="nav-num">10</span> Deploy everything</a>
+  <div class="group">Despliegue</div>
+  <a class="top" href="#prerequisitos">6. Prerrequisitos</a>
+  <a href="#descarga">7. Descarga del asset</a>
+  <a href="#credenciales">8. Configurar credenciales</a>
+  <a href="#validacion">9. Validar entorno (make check)</a>
+  <a href="#despliegue">10. Desplegar todo (make up)</a>
 
-    <div class="nav-group-title">Operation & Testing</div>
-    <a href="#sec-11" class="nav-item"><span class="nav-num">11</span> Explore Confluent Cloud</a>
-    <a href="#sec-12" class="nav-item"><span class="nav-num">12</span> Open the applications</a>
-    <a href="#sec-13" class="nav-item"><span class="nav-num">13</span> Test an APPROVED loan</a>
-    <a href="#sec-14" class="nav-item"><span class="nav-num">14</span> Test a REJECTED loan</a>
-    <a href="#sec-15" class="nav-item"><span class="nav-num">15</span> Generate continuous traffic</a>
-    <a href="#sec-16" class="nav-item"><span class="nav-num">16</span> Observe the dashboard</a>
+  <div class="group">Operación y Pruebas</div>
+  <a class="top" href="#confluent-ui">11. Explorar Confluent Cloud</a>
+  <a href="#apps">12. Abrir las aplicaciones</a>
+  <a href="#caso-aprobado">13. Probar crédito APROBADO</a>
+  <a href="#caso-rechazado">14. Probar crédito RECHAZADO</a>
+  <a href="#demo-traffic">15. Tráfico continuo automático</a>
+  <a href="#dashboard">16. Observar el Dashboard</a>
 
-    <div class="nav-group-title">Conclusion</div>
-    <a href="#sec-17" class="nav-item"><span class="nav-num">17</span> What just happened?</a>
-    <a href="#sec-18" class="nav-item"><span class="nav-num">18</span> Clean up</a>
-    <a href="#sec-19" class="nav-item"><span class="nav-num">19</span> Key takeaways</a>
-  </aside>
+  <div class="group">Cierre</div>
+  <a class="top" href="#resumen-flujo">17. ¿Qué acaba de ocurrir?</a>
+  <a href="#cleanup">18. Limpieza de recursos (destroy)</a>
+  <a href="#takeaways">19. Conclusiones clave</a>
+</nav>
 
-  <!-- Main Content -->
-  <main class="content">
+<main>
 
-    <!-- Hero Header -->
-    <div class="hero-card">
-      <div class="hero-badge">Advanced Hands-On Lab</div>
-      <h1>Banking Real-Time Loan Decisions with Confluent</h1>
-      <div class="subtitle">Building an end-to-end streaming architecture with Infrastructure as Code</div>
-      <div class="hero-highlight">
-        "From clicking resources into existence to deploying a reproducible streaming architecture."
-      </div>
+  <!-- ===================== 1. INTRODUCCIÓN ===================== -->
+  <section id="intro">
+    <div class="breadcrumb"><a href="index.html">Laboratorios</a> &nbsp;/&nbsp; Streaming Bancario con IaC</div>
+    <h1>Banking Real-Time Loan Decisions with Confluent</h1>
+    <p class="lead">Building an end-to-end streaming architecture with Infrastructure as Code.</p>
+
+    <div class="note theory">
+      <span class="label">El cambio de enfoque de este laboratorio</span>
+      <p>En el laboratorio anterior exploraste las capacidades de Confluent Cloud interactuando con su interfaz gráfica (UI). En este segundo laboratorio cambiamos radicalmente de método: en lugar de crear componentes uno a uno desde la consola web, desplegaremos una arquitectura completa, gobernada y lista para producción utilizando <strong>Infrastructure as Code (IaC)</strong> y automatización.</p>
+      <p style="margin-top: .5rem; font-weight: 600;"><em>"From clicking resources into existence to deploying a reproducible streaming architecture."</em></p>
     </div>
+  </section>
 
-    <!-- Section 1 -->
-    <section id="sec-1" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">01</span>
-        <h2>Introduction</h2>
-      </div>
-      <p>
-        In the previous hands-on laboratory, you explored <strong>Confluent Cloud</strong> primarily through the web user interface (UI) — manually provisioning clusters, creating topics, registering schemas, and querying stream data.
-      </p>
-      <p>
-        In this second laboratory, we change paradigms. In enterprise production environments, manual console clicks introduce human error, lack audit trails, and cannot be recreated automatically in CI/CD pipelines.
-      </p>
-      <p>
-        Here, you will deploy a complete, production-grade <strong>real-time loan decision streaming pipeline</strong> using <strong>Infrastructure as Code (IaC)</strong> and end-to-end automation.
-      </p>
+  <!-- ===================== 2. QUÉ VAMOS A CONSTRUIR ===================== -->
+  <section id="construir">
+    <h2>2. ¿Qué vamos a construir?</h2>
+    <p>Resolveremos un caso financiero real: la <strong>evaluación y decisión automática de solicitudes de préstamo bancario en tiempo real</strong>.</p>
+    <p>Cuando un cliente solicita un crédito a través del canal digital, el sistema bancario necesita contrastar inmediatamente la solicitud con su perfil financiero y su historial crediticio:</p>
 
-      <div class="callout info">
-        <div class="callout-icon">💡</div>
-        <div class="callout-content">
-          <strong>The Core Shift</strong>
-          Instead of manually configuring dozens of cloud and local settings, you will execute structured automation (<code class="inline">make check</code>, <code class="inline">make up</code>, <code class="inline">make demo-traffic</code>) backed by <strong>Terraform</strong>, <strong>Docker/Podman Compose</strong>, and <strong>Flink SQL</strong>.
-        </div>
-      </div>
-    </section>
+    <ul>
+      <li><strong>Solicitud en curso:</strong> Importe solicitado, plazo en meses y finalidad del crédito.</li>
+      <li><strong>Perfil maestro del cliente:</strong> Ingresos mensuales, nivel de endeudamiento actual, años de antigüedad laboral y segmento de cliente.</li>
+      <li><strong>Comportamiento histórico de pagos:</strong> Registro acumulado de cuotas pagadas a tiempo, retrasos e impagos históricos (defaults).</li>
+    </ul>
 
-    <!-- Section 2 -->
-    <section id="sec-2" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">02</span>
-        <h2>What are we building?</h2>
-      </div>
-      <p>
-        We are addressing a real-world commercial banking use case: <strong>automated, instant loan decisioning</strong>.
-      </p>
-      <p>
-        When a retail customer applies for a loan, traditional batch systems take hours or days to evaluate risk. In a modern event-driven architecture, the bank must correlate multiple disparate signals in sub-second time:
-      </p>
-      <ul>
-        <li><strong>Current Loan Request:</strong> Amount requested, term in months, purpose, timestamp.</li>
-        <li><strong>Customer Master Profile:</strong> Monthly income, current debt, employment stability, customer segment.</li>
-        <li><strong>Historical Payment Behavior:</strong> Number of on-time payments, late payments, and historical defaults.</li>
-      </ul>
-      <p>
-        The streaming engine correlates these data streams in real time using temporal joins and applies a multi-variable scoring model (<strong>RULES_V1</strong>, scale 0–100 points) to emit either an <span class="pill approved">APPROVED</span> or <span class="pill rejected">REJECTED</span> decision with full audit reasons.
-      </p>
+    <p>El motor de streaming correlaciona estos flujos de eventos mediante <em>temporal joins</em> en Apache Flink y ejecuta el modelo de scoring <strong>RULES_V1</strong> (puntuación de 0 a 100 puntos) para emitir una decisión instantánea:</p>
+    <p><span class="tag green">APPROVED</span> (Aprobado, si la puntuación es &ge; 60 y no registra impagos) o <span class="tag red">REJECTED</span> (Rechazado, detallando los motivos exactos del rechazo).</p>
 
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Evaluation Factor</th>
-              <th>Rule Metric</th>
-              <th>Scoring Impact (Max 100 pts)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Debt-to-Income (DTI)</strong></td>
-              <td><code class="inline">(debt + installment) / income</code></td>
-              <td>DTI &le; 30%: <strong>40 pts</strong> &bull; &le; 40%: <strong>25 pts</strong> &bull; &le; 50%: <strong>10 pts</strong> &bull; &gt; 50%: <strong>0 pts</strong></td>
-            </tr>
-            <tr>
-              <td><strong>Payment History</strong></td>
-              <td>Defaults &amp; Late payments</td>
-              <td>Any defaults: <strong>0 pts</strong> &bull; 0 late: <strong>30 pts</strong> &bull; &le; 2 late: <strong>20 pts</strong> &bull; &gt; 2 late: <strong>8 pts</strong></td>
-            </tr>
-            <tr>
-              <td><strong>Employment Stability</strong></td>
-              <td>Years in current employment</td>
-              <td>&ge; 5 yrs: <strong>15 pts</strong> &bull; &ge; 3 yrs: <strong>10 pts</strong> &bull; &ge; 1 yr: <strong>5 pts</strong> &bull; &lt; 1 yr: <strong>0 pts</strong></td>
-            </tr>
-            <tr>
-              <td><strong>Loan Amount Ratio</strong></td>
-              <td><code class="inline">amount / (income * 12)</code></td>
-              <td>&le; 50% annual income: <strong>15 pts</strong> &bull; &le; 100%: <strong>8 pts</strong> &bull; &gt; 100%: <strong>0 pts</strong></td>
-            </tr>
-            <tr>
-              <td><strong>Approval Criteria</strong></td>
-              <td>Overall threshold</td>
-              <td><strong>APPROVED</strong> if Score &ge; 60 AND 0 defaults &bull; <strong>REJECTED</strong> otherwise</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <table>
+      <thead>
+        <tr>
+          <th>Dimensión de Riesgo</th>
+          <th>Cálculo / Métrica</th>
+          <th>Ponderación (Máx. 100 pts)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ratio Deuda/Ingresos (DTI)</td>
+          <td><code>(deuda_mensual + cuota) / ingresos</code></td>
+          <td>DTI &le; 30%: 40 pts &bull; &le; 40%: 25 pts &bull; &le; 50%: 10 pts &bull; &gt; 50%: 0 pts</td>
+        </tr>
+        <tr>
+          <td>Historial de Pagos</td>
+          <td>Impagos y retrasos acumulados</td>
+          <td>Con impagos: 0 pts &bull; 0 retrasos: 30 pts &bull; &le; 2 retrasos: 20 pts &bull; &gt; 2 retrasos: 8 pts</td>
+        </tr>
+        <tr>
+          <td>Estabilidad Laboral</td>
+          <td>Años en el empleo actual</td>
+          <td>&ge; 5 años: 15 pts &bull; &ge; 3 años: 10 pts &bull; &ge; 1 año: 5 pts &bull; &lt; 1 año: 0 pts</td>
+        </tr>
+        <tr>
+          <td>Importe vs Ingresos Anuales</td>
+          <td><code>importe / (ingresos * 12)</code></td>
+          <td>&le; 50% anual: 15 pts &bull; &le; 100%: 8 pts &bull; &gt; 100%: 0 pts</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 
-    <!-- Section 3 -->
-    <section id="sec-3" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">03</span>
-        <h2>Architecture</h2>
-      </div>
-      <p>
-        The solution bridges relational operational databases, event streaming in Confluent Cloud, stateful stream processing via Apache Flink, and microservices for user interaction and monitoring.
-      </p>
+  <!-- ===================== 3. ARQUITECTURA ===================== -->
+  <section id="arquitectura">
+    <h2>3. Arquitectura</h2>
+    <p>La solución integra bases de datos transaccionales, captura de cambios en tiempo real (CDC), streaming gobernado en Confluent Cloud, procesamiento continuo con Flink SQL y microservicios desacoplados:</p>
 
-      <div class="diagram-box">
-+-------------------------+
-|   PostgreSQL (Local)    |
-| - customers             |
-| - payment_history       |
-+------------+------------+
-             |
-             | Debezium CDC (Kafka Connect)
-             v
-+--------------------------------------------------------------------------+
-|                             Confluent Cloud                              |
-|                                                                          |
-|  [Topic: customers]          [Topic: payment_history]                    |
-|          |                               |                               |
-|          |                               v                               |
-|          |                Flink DML (Aggregations)                       |
-|          |                               |                               |
-|          |                               v                               |
-|          |                    [Table: customer_payment_stats]            |
-|          |                               |                               |
-|          +---------------+---------------+                               |
-|                          |                                               |
-|  [Topic: loan-requests]  |  (Temporal Join FOR SYSTEM_TIME AS OF)        |
-|          |               |                                               |
-|          +-------------->+                                               |
-|                          v                                               |
-|               Flink DML (Scoring RULES_V1)                               |
-|                          |                                               |
-|                          v                                               |
-|               [Topic: loan-decisions]                                    |
-+--------------------------+-----------------------------------------------+
-                           |
-                           v
-+--------------------------+--------------------+
-|                Frontend Dashboard             |
-|              http://127.0.0.1:8081            |
-|   (Real-time KPIs, Charts & Decisions Table)  |
-+-----------------------------------------------+
+<pre class="out">PostgreSQL (Local)
+  ├── customers (perfil maestro)
+  └── payment_history (historial de pagos)
+         │
+         │ Debezium CDC (Kafka Connect)
+         ▼
+    Confluent Cloud
+         │
+         ├── customers (tópico CDC)
+         └── payment_history (tópico CDC)
+                    │
+                    │
+Loan Request UI ────┼──→ [Tópico: loan-requests]
+  (:8080)           │            │
+                    │            ▼
+                    │       Flink SQL
+                    │   (temporal join + scoring)
+                    │            │
+                    ▼            ▼
+Demo Producer ───────   [Tópico: loan-decisions]
+(make demo-traffic)              │
+                                 ▼
+                        Frontend Dashboard
+                             (:8081)</pre>
 
-Traffic Sources to [Topic: loan-requests]:
-1. Loan Request Web UI (:8080)   --> Manual user submission
-2. Demo Traffic Producer         --> Automated background streaming (make demo-traffic)
-      </div>
+    <h4>Rol de cada componente</h4>
+    <ul>
+      <li><strong>PostgreSQL 18:</strong> Base de datos relacional local que custodia los datos maestros de clientes y registros de pagos, configurada con <code>REPLICA IDENTITY FULL</code>.</li>
+      <li><strong>Kafka Connect + Debezium:</strong> Conector CDC que lee los logs de replicación de PostgreSQL y emite eventos de cambio hacia Confluent Cloud con esquemas Avro.</li>
+      <li><strong>Confluent Cloud:</strong> Clúster Kafka gestionado y Schema Registry que gobiernan los contratos de datos y garantizan almacenamiento escalable y seguro.</li>
+      <li><strong>Flink SQL Compute Pool:</strong> Motor de procesamiento en streaming que ejecuta agregaciones continuas de estadísticas e invoca <em>temporal joins</em> para calcular el scoring al milisegundo.</li>
+      <li><strong>Frontend de Solicitudes (Puerto 8080):</strong> Aplicación Express + React para registrar solicitudes de crédito manuales y publicarlas en formato Avro.</li>
+      <li><strong>Dashboard de Decisiones (Puerto 8081):</strong> Cuadro de mando operacional en tiempo real que consume el tópico de decisiones y actualiza KPIs y gráficos en vivo.</li>
+    </ul>
+  </section>
 
-      <div class="arch-grid">
-        <div class="arch-card">
-          <h4>🐘 PostgreSQL</h4>
-          <p>Transactional database hosting customer records and payment history table with full replica identity.</p>
-        </div>
-        <div class="arch-card">
-          <h4>🔄 Debezium CDC</h4>
-          <p>Kafka Connect Debezium connector capturing row-level changes into Kafka topics with Avro serialization.</p>
-        </div>
-        <div class="arch-card">
-          <h4>☁️ Confluent Cloud</h4>
-          <p>Managed Kafka cluster and Schema Registry governing data contracts and secure topic storage.</p>
-        </div>
-        <div class="arch-card">
-          <h4>⚡ Flink SQL</h4>
-          <p>Continuous compute pool executing stream aggregations and temporal joins to generate decisions instantly.</p>
-        </div>
-        <div class="arch-card">
-          <h4>📝 Loan Request UI</h4>
-          <p>Express + React application on port <strong>8080</strong> validating input and publishing Avro events.</p>
-        </div>
-        <div class="arch-card">
-          <h4>📊 Live Dashboard</h4>
-          <p>Express + React dashboard on port <strong>8081</strong> consuming decision streams and rendering KPIs.</p>
-        </div>
-      </div>
-    </section>
+  <!-- ===================== 4. INFRASTRUCTURE AS CODE ===================== -->
+  <section id="iac">
+    <h2>4. Infrastructure as Code (IaC)</h2>
+    <p>En este laboratorio, toda la topología se construye de manera automatizada y determinista mediante código:</p>
 
-    <!-- Section 4 -->
-    <section id="sec-4" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">04</span>
-        <h2>Infrastructure as Code</h2>
-      </div>
-      <p>
-        The key theme of this workshop is <strong>declarative infrastructure</strong>. Instead of manually clicking in the web UI, the entire topology is defined in code:
-      </p>
-
-      <div class="diagram-box">
-make up
+<pre class="out">make up
    │
    ├── cloud-up  ──> Terraform (terraform/)
-   │                   ├── Confluent Environment & Kafka Cluster
-   │                   ├── Schema Registry & Avro Schemas
-   │                   ├── Topics (loan-requests, customers, payment_history)
-   │                   ├── Service Accounts, Role Bindings & Least-Privilege ACLs
+   │                   ├── Confluent Environment &amp; Kafka Cluster
+   │                   ├── Schema Registry &amp; Esquemas Avro
+   │                   ├── Tópicos (loan-requests, customers, payment_history)
+   │                   ├── Service Accounts, Role Bindings y ACLs de mínimo privilegio
    │                   ├── Flink Compute Pool
-   │                   └── Output: .env.runtime
+   │                   └── Salida: .env.runtime
    │
    ├── local-up  ──> Compose (compose/compose.yaml)
-   │                   ├── PostgreSQL (schema + seed data)
-   │                   ├── Kafka Connect (Debezium CDC connector registration)
-   │                   ├── Frontend Loan Requests (:8080)
-   │                   └── Frontend Dashboard (:8081)
+   │                   ├── PostgreSQL (esquema + seed determinista)
+   │                   ├── Kafka Connect (registro del conector Debezium CDC)
+   │                   ├── Frontend de Solicitudes (:8080)
+   │                   └── Dashboard de Decisiones (:8081)
    │
    └── flink-up  ──> Terraform (terraform-flink/)
-                       ├── Primary Key Declarations
-                       ├── DDL & DML: customer_payment_stats
-                       └── DDL & DML: loan-decisions (RULES_V1 scoring engine)
-      </div>
+                       ├── Declaración de Claves Primarias CDC
+                       ├── DDL &amp; DML: customer_payment_stats
+                       └── DDL &amp; DML: loan-decisions (motor de scoring)</pre>
 
-      <h3>Why Infrastructure as Code for Streaming?</h3>
+    <div class="note">
+      <span class="label">¿Por qué utilizar IaC en arquitecturas de streaming?</span>
       <ul>
-        <li><strong>Reproducibility:</strong> Deploy an identical, complete streaming stack in any region or cloud account with zero configuration drift.</li>
-        <li><strong>Version Control:</strong> Track architectural changes, ACLs, scoring thresholds, and schema updates in Git.</li>
-        <li><strong>Least-Privilege Security:</strong> Terraform generates dedicated Service Accounts and narrow ACLs for each microservice automatically.</li>
-        <li><strong>Deterministic Teardown:</strong> Clean up all cloud and local resources with a single command (<code class="inline">make destroy</code>), avoiding lingering cloud costs.</li>
+        <li><strong>Reproducibilidad:</strong> Permite recrear el entorno completo en cualquier región o cuenta cloud sin desviaciones manuales.</li>
+        <li><strong>Control de versiones:</strong> Toda la configuración de tópicos, umbrales de scoring, esquemas y ACLs reside en Git.</li>
+        <li><strong>Seguridad por diseño:</strong> Cada microservicio recibe credenciales únicas y permisos estrictamente acotados mediante ACLs gestionadas por Terraform.</li>
+        <li><strong>Limpieza absoluta:</strong> Se elimina todo el entorno con un único comando (<code class="inline">make destroy</code>), evitando costes residuales.</li>
       </ul>
-    </section>
+    </div>
+  </section>
 
-    <!-- Section 5 -->
-    <section id="sec-5" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">05</span>
-        <h2>What gets deployed?</h2>
-      </div>
-      <p>
-        Here is the concrete inventory of resources provisioned by the automation:
-      </p>
+  <!-- ===================== 5. RECURSOS DESPLEGADOS ===================== -->
+  <section id="recursos">
+    <h2>5. ¿Qué recursos se despliegan?</h2>
+    <p>A continuación se detalla el inventario completo de recursos creados por la automatización:</p>
 
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Layer</th>
-              <th>Resource Name / Type</th>
-              <th>Purpose</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td><code class="inline">banking-streaming-env</code></td>
-              <td>Isolated environment with Stream Governance ESSENTIALS package</td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td><code class="inline">banking-streaming-cluster</code></td>
-              <td>Kafka cluster (Single Zone AWS in your configured region)</td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td>Schema Registry Cluster</td>
-              <td>Houses Avro schemas (<code class="inline">loan-requests-value</code>, CDC subjects)</td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td>Topics: <code class="inline">customers</code>, <code class="inline">payment_history</code></td>
-              <td>CDC topics populated by Debezium from PostgreSQL</td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td>Topics: <code class="inline">loan-requests</code>, <code class="inline">loan-decisions</code></td>
-              <td>Business ingestion and real-time output topics</td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td>Connect Internal Topics</td>
-              <td>Compact topics: <code class="inline">*-connect-configs</code>, <code class="inline">*-offsets</code>, <code class="inline">*-status</code></td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td>Service Accounts &amp; ACLs</td>
-              <td><code class="inline">infra-manager</code>, <code class="inline">statements-runner</code>, <code class="inline">connect-cdc</code>, <code class="inline">producer</code>, <code class="inline">requests-api</code>, <code class="inline">dashboard-api</code></td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td>Flink Compute Pool</td>
-              <td>Serverless Flink compute pool (default max 5 CFU)</td>
-            </tr>
-            <tr>
-              <td><strong>Confluent Cloud</strong></td>
-              <td>Flink Statements</td>
-              <td>Continuous DDL &amp; DML statements for payment stats and scoring</td>
-            </tr>
-            <tr>
-              <td><strong>Local Containers</strong></td>
-              <td><code class="inline">postgres</code> (:5432)</td>
-              <td>PostgreSQL 18 database with schema and deterministic customer seed</td>
-            </tr>
-            <tr>
-              <td><strong>Local Containers</strong></td>
-              <td><code class="inline">connect</code> (:8083)</td>
-              <td>Kafka Connect worker running Debezium PostgreSQL connector</td>
-            </tr>
-            <tr>
-              <td><strong>Local Containers</strong></td>
-              <td><code class="inline">frontend-requests</code> (:8080)</td>
-              <td>Web UI and Express API for manual loan application submission</td>
-            </tr>
-            <tr>
-              <td><strong>Local Containers</strong></td>
-              <td><code class="inline">frontend-dashboard</code> (:8081)</td>
-              <td>Web Dashboard and Express API rendering live metrics and decisions</td>
-            </tr>
-            <tr>
-              <td><strong>Local (On-demand)</strong></td>
-              <td><code class="inline">producer-demo-traffic</code></td>
-              <td>Background Java producer generating continuous loan requests</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <table>
+      <thead>
+        <tr>
+          <th>Capa</th>
+          <th>Recurso / Componente</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td><code>banking-streaming-env</code></td>
+          <td>Entorno con paquete Stream Governance ESSENTIALS</td>
+        </tr>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td><code>banking-streaming-cluster</code></td>
+          <td>Clúster Kafka en la región AWS configurada</td>
+        </tr>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td>Schema Registry</td>
+          <td>Gobierno de esquemas Avro (<code>loan-requests-value</code>, sujetos CDC)</td>
+        </tr>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td>Tópicos de Negocio</td>
+          <td><code>customers</code>, <code>payment_history</code>, <code>loan-requests</code>, <code>loan-decisions</code></td>
+        </tr>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td>Tópicos de Kafka Connect</td>
+          <td>Tópicos compactados para configs, offsets y estado del worker</td>
+        </tr>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td>Service Accounts y ACLs</td>
+          <td>Identidades de mínimo privilegio: <code>infra-manager</code>, <code>statements-runner</code>, <code>connect-cdc</code>, <code>producer</code>, <code>requests-api</code>, <code>dashboard-api</code></td>
+        </tr>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td>Flink Compute Pool</td>
+          <td>Pool de cómputo serverless para Flink SQL (5 CFU)</td>
+        </tr>
+        <tr>
+          <td>Confluent Cloud</td>
+          <td>Sentencias Flink SQL</td>
+          <td>Consultas continuas de agregación y cálculo de decisiones</td>
+        </tr>
+        <tr>
+          <td>Contenedores locales</td>
+          <td><code>postgres</code> (:5432)</td>
+          <td>Base de datos PostgreSQL con datos iniciales (seed determinista)</td>
+        </tr>
+        <tr>
+          <td>Contenedores locales</td>
+          <td><code>connect</code> (:8083)</td>
+          <td>Worker de Kafka Connect con conector Debezium PostgreSQL</td>
+        </tr>
+        <tr>
+          <td>Contenedores locales</td>
+          <td><code>frontend-requests</code> (:8080)</td>
+          <td>Formulario web y API para emitir solicitudes de crédito</td>
+        </tr>
+        <tr>
+          <td>Contenedores locales</td>
+          <td><code>frontend-dashboard</code> (:8081)</td>
+          <td>Dashboard operacional que muestra decisiones y KPIs</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 
-    <!-- Section 6 -->
-    <section id="sec-6" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">06</span>
-        <h2>Prerequisites</h2>
-      </div>
-      <p>
-        The environment verification script (<code class="inline">scripts/check.sh</code>) checks for the following tools and settings:
-      </p>
+  <!-- ===================== 6. PRERREQUISITOS ===================== -->
+  <section id="prerequisitos">
+    <h2>6. Prerrequisitos</h2>
+    <p>El script de verificación (<code class="inline">scripts/check.sh</code>) valida que tu estación de trabajo cuente con las siguientes herramientas instaladas y configuradas:</p>
 
-      <h3>1. Required Local Tools</h3>
-      <ul>
-        <li><strong>Terraform:</strong> CLI v1.x or higher (<code class="inline">terraform version</code>).</li>
-        <li><strong>Make:</strong> Standard GNU Make (<code class="inline">make</code>).</li>
-        <li><strong>Curl &amp; JQ:</strong> <code class="inline">curl</code> and <code class="inline">jq</code> for HTTP calls and JSON processing.</li>
-        <li><strong>OpenSSL:</strong> Required by <code class="inline">make init</code> to generate random passwords.</li>
-        <li><strong>Container Runtime &amp; Compose:</strong> Either <strong>Docker</strong> (<code class="inline">docker</code> + <code class="inline">docker compose</code>) or <strong>Podman</strong> (<code class="inline">podman</code> + <code class="inline">podman compose</code> / <code class="inline">podman-compose</code>).</li>
-      </ul>
+    <ol class="steps">
+      <li><strong>Terraform CLI:</strong> Versión 1.x o superior instalada (<code class="inline">terraform version</code>).</li>
+      <li><strong>Herramientas de sistema:</strong> <code class="inline">make</code>, <code class="inline">curl</code>, <code class="inline">jq</code> y <code class="inline">openssl</code>.</li>
+      <li><strong>Runtime de contenedores:</strong> <strong>Podman</strong> (<code class="inline">podman</code> + <code class="inline">podman compose</code>) o <strong>Docker</strong> (<code class="inline">docker</code> + <code class="inline">docker compose</code>) activo y en ejecución.</li>
+      <li><strong>Cuenta de Confluent Cloud:</strong> API Key y Secret de tipo <em>Cloud Resource Management</em> con rol de administración a nivel de organización (permisos para crear entornos y service accounts).</li>
+      <li><strong>Puertos locales libres:</strong> Los puertos <code class="inline">5432</code>, <code class="inline">8083</code>, <code class="inline">8080</code> y <code class="inline">8081</code> deben estar disponibles en <code class="inline">127.0.0.1</code>.</li>
+    </ol>
 
-      <h3>2. Confluent Cloud Account &amp; Credentials</h3>
-      <ul>
-        <li>An active <strong>Confluent Cloud</strong> account.</li>
-        <li>A <strong>Cloud Resource Management API Key</strong> and Secret (created from <em>Confluent Cloud &gt; Top Right Menu &gt; API Keys &gt; Add API Key &gt; Cloud resource management</em>) with permissions to provision environments and service accounts (OrganizationAdmin).</li>
-      </ul>
+    <div class="note warn">
+      <span class="label">Aviso sobre costes en Confluent Cloud</span>
+      <p>El aprovisionamiento de clústeres y compute pools de Flink genera consumo en tu cuenta de Confluent Cloud mientras se encuentren activos. Al finalizar el laboratorio, ejecutá siempre <code class="inline">make destroy</code> para dar de baja todos los recursos.</p>
+    </div>
+  </section>
 
-      <h3>3. Local Network Ports</h3>
-      <p>Ensure the following local ports on <code class="inline">127.0.0.1</code> are free:</p>
-      <ul>
-        <li><code class="inline">5432</code>: Local PostgreSQL</li>
-        <li><code class="inline">8083</code>: Kafka Connect REST API</li>
-        <li><code class="inline">8080</code>: Loan Request Web UI</li>
-        <li><code class="inline">8081</code>: Real-Time Decision Dashboard</li>
-      </ul>
+  <!-- ===================== 7. DESCARGA DEL ASSET ===================== -->
+  <section id="descarga">
+    <h2>7. Descarga del asset</h2>
+    <p>Descargá el paquete ZIP del laboratorio que contiene todos los módulos de Terraform, definiciones de Compose, scripts y código de las aplicaciones:</p>
 
-      <div class="callout warning">
-        <div class="callout-icon">⚠️</div>
-        <div class="callout-content">
-          <strong>Cloud Cost Notice</strong>
-          Deploying clusters and Flink compute pools in Confluent Cloud incurs cloud consumption charges. Always execute <code class="inline">make destroy</code> at the end of the lab to deprovision all cloud resources.
-        </div>
-      </div>
-    </section>
+    <a href="./banking-streaming-asset.zip" class="btn-primary" download="banking-streaming-asset.zip">
+      <svg width="18" height="18" viewBox="0 0 32 32" fill="#fff" aria-hidden="true"><path d="M26 24v4H6v-4H4v4a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2v-4z"/><path d="M26 14l-1.41-1.41L17 20.17V2h-2v18.17l-7.59-7.58L6 14l10 10 10-10z"/></svg>
+      Descargar Lab Files (banking-streaming-asset.zip)
+    </a>
 
-    <!-- Section 7 -->
-    <section id="sec-7" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">07</span>
-        <h2>Download the lab</h2>
-      </div>
-      <p>
-        Download the self-contained lab package using the button below or direct link:
-      </p>
+    <p>Una vez descargado, descomprimilo en tu directorio de trabajo y accedé a la carpeta:</p>
 
-      <div class="download-banner">
-        <h3>Ready to start?</h3>
-        <p>Download the complete project bundle with Terraform modules, Docker compose, and apps.</p>
-        <a href="./banking-streaming-asset.zip" class="btn-download-large" download="banking-streaming-asset.zip">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Download Lab Files (banking-streaming-asset.zip)
-        </a>
-      </div>
-
-      <p>Once downloaded, unpack the archive in your working directory and enter the project folder:</p>
-
-      <div class="code-block">
-        <div class="code-header">
-          <span>bash</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code>unzip banking-streaming-asset.zip
+    <div class="code-label">Terminal</div>
+    <pre><code>unzip banking-streaming-asset.zip
 cd banking-streaming-asset</code></pre>
-      </div>
-    </section>
+  </section>
 
-    <!-- Section 8 -->
-    <section id="sec-8" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">08</span>
-        <h2>Configure credentials</h2>
-      </div>
-      <p>
-        The asset includes an initialization script that securely generates your <code class="inline">.env</code> configuration with random database credentials:
-      </p>
+  <!-- ===================== 8. CONFIGURAR CREDENCIALES ===================== -->
+  <section id="credenciales">
+    <h2>8. Configurar credenciales</h2>
+    <p>El asset incluye un script de inicialización que genera de forma segura tu archivo <code class="inline">.env</code> con contraseñas aleatorias para PostgreSQL y permisos restrictivos (<code class="inline">chmod 600</code>):</p>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span>bash</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code>make init</code></pre>
-      </div>
+    <div class="code-label">Terminal</div>
+    <pre><code>make init</code></pre>
 
-      <p>
-        This creates <code class="inline">.env</code> from <code class="inline">.env.example</code> with secure permissions (<code class="inline">chmod 600</code>). Now, open <code class="inline">.env</code> in your preferred editor:
-      </p>
+    <p>A continuación, abrí el archivo <code class="inline">.env</code> con tu editor de texto y completá tus credenciales de Confluent Cloud:</p>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span>.env (Configuration)</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code># --- Confluent Cloud (OBLIGATORIO) -------------------------------------------
+    <div class="code-label">Archivo .env</div>
+    <pre><code># --- Confluent Cloud (OBLIGATORIO) -------------------------------------------
 # Cloud API key (NO es una API key de clúster). Créala en:
 #   Confluent Cloud > menú superior derecha > API keys > Add API key > Cloud resource management
-CONFLUENT_CLOUD_API_KEY="YOUR_CLOUD_API_KEY"
-CONFLUENT_CLOUD_API_SECRET="YOUR_CLOUD_API_SECRET"
+CONFLUENT_CLOUD_API_KEY="TU_API_KEY_AQUI"
+CONFLUENT_CLOUD_API_SECRET="TU_API_SECRET_AQUI"
 
 # Región de AWS donde se despliega todo (clúster Kafka + Flink).
 CLOUD_REGION="us-east-1"
@@ -982,47 +485,28 @@ POSTGRES_PORT=5432
 CONNECT_PORT=8083
 
 # Generadas automáticamente por make init:
-POSTGRES_PASSWORD="[auto-generated]"
-CDC_PASSWORD="[auto-generated]"</code></pre>
-      </div>
+POSTGRES_PASSWORD="[generada-automáticamente]"
+CDC_PASSWORD="[generada-automáticamente]"</code></pre>
 
-      <div class="callout info">
-        <div class="callout-icon">ℹ️</div>
-        <div class="callout-content">
-          <strong>Understanding .env vs .env.runtime</strong>
-          <br>
-          &bull; <strong><code class="inline">.env</code></strong>: Your user inputs (Cloud credentials, desired region, ports).
-          <br>
-          &bull; <strong><code class="inline">.env.runtime</code></strong>: Automatically generated by Terraform during <code class="inline">make up</code>. Contains dynamically provisioned endpoints, topic names, and per-service API keys. <em>You never need to edit .env.runtime manually.</em>
-        </div>
-      </div>
-    </section>
+    <div class="note tip">
+      <span class="label">Diferencia entre .env y .env.runtime</span>
+      <p><strong><code class="inline">.env</code></strong> contiene tus variables de entrada (credenciales de Cloud, región, puertos).<br>
+      <strong><code class="inline">.env.runtime</code></strong> es generado automáticamente por Terraform durante el despliegue con los endpoints del clúster y las API keys específicas de cada servicio. <em>Nunca debés editar .env.runtime a mano.</em></p>
+    </div>
+  </section>
 
-    <!-- Section 9 -->
-    <section id="sec-9" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">09</span>
-        <h2>Validate your environment</h2>
-      </div>
-      <p>
-        Before creating any cloud resources, run the automated health check to verify your tools, credentials format, and container runtime:
-      </p>
+  <!-- ===================== 9. VALIDAR ENTORNO ===================== -->
+  <section id="validacion">
+    <h2>9. Validar tu entorno</h2>
+    <p>Antes de lanzar la infraestructura, ejecutá la validación automatizada para comprobar que todo está listo:</p>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span>bash</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code>make check</code></pre>
-      </div>
+    <div class="code-label">Terminal</div>
+    <pre><code>make check</code></pre>
 
-      <p>Expected output:</p>
+    <p>La salida esperada confirmará cada una de las comprobaciones sin crear ningún recurso todavía:</p>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span>Terminal Output</span>
-        </div>
-        <pre><code>== Herramientas ==
+    <div class="code-label">Salida de consola</div>
+    <pre class="out">== Herramientas ==
 [ OK ] terraform: Terraform v1.x.x
 [ OK ] make disponible
 [ OK ] curl disponible
@@ -1035,412 +519,326 @@ CDC_PASSWORD="[auto-generated]"</code></pre>
 [ OK ] CLOUD_REGION=us-east-1
 [ OK ] FLINK_MAX_CFU=5
 == Contenedores ==
-[ OK ] runtime: podman (or docker)
+[ OK ] runtime: podman (o docker)
 [ OK ] podman responde
-[ OK ] compose: podman compose (or docker compose)
+[ OK ] compose: podman compose (o docker compose)
 == Puertos locales ==
 [ OK ] POSTGRES_PORT=5432 libre
 [ OK ] CONNECT_PORT=8083 libre
 == watsonx.data (opcional) ==
 [ OK ] ENABLE_WATSONXDATA=false (modo solo Confluent)
 
-[ OK ] make check: entorno listo.</code></pre>
-      </div>
-    </section>
+[ OK ] make check: entorno listo.</pre>
+  </section>
 
-    <!-- Section 10 -->
-    <section id="sec-10" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">10</span>
-        <h2>Deploy everything</h2>
-      </div>
-      <p>
-        Execute the master deployment command. This single command provisions the cloud environment, builds and runs local containers, configures CDC, and starts Flink streaming SQL:
-      </p>
+  <!-- ===================== 10. DESPLEGAR TODO ===================== -->
+  <section id="despliegue">
+    <h2>10. Desplegar todo</h2>
+    <p>Este es el comando principal del laboratorio. Ejecuta de forma secuencial y coordinada toda la infraestructura cloud, los contenedores locales, la captura CDC y Flink SQL:</p>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span>bash</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code>make up</code></pre>
-      </div>
+    <div class="code-label">Terminal</div>
+    <pre><code>make up</code></pre>
 
-      <h3>Deployment Progression</h3>
-      <div class="diagram-box">
-1. [cloud-up]  Terraform applies Confluent Cloud resources (~45-60s)
-               --> Environment, Kafka Cluster, Schema Registry, Topics, Flink Pool
-               --> Generates .env.runtime with microservice credentials
+    <h4>Secuencia de ejecución de make up</h4>
+    <ol class="steps">
+      <li><strong>cloud-up (~45-60 s):</strong> Terraform crea el entorno en Confluent Cloud, el clúster Kafka, Schema Registry, los tópicos, las Service Accounts, ACLs y el Compute Pool de Flink. Luego genera el archivo <code class="inline">.env.runtime</code>.</li>
+      <li><strong>local-up (~20-30 s):</strong> Compose compila y levanta los contenedores (<code class="inline">postgres</code>, <code class="inline">connect</code>, <code class="inline">frontend-requests</code> en el puerto 8080 y <code class="inline">frontend-dashboard</code> en el puerto 8081). Se registra el conector Debezium y se verifica que esté en estado <code>RUNNING</code>.</li>
+      <li><strong>flink-up (~15-20 s):</strong> Se definen las Primary Keys de las tablas CDC y se aplican las sentencias persistentes de Flink SQL (agregación de estadísticas y scoring de decisiones).</li>
+    </ol>
 
-2. [local-up]  Builds & starts container services via Compose (~15-30s)
-               --> postgres, connect, frontend-requests (:8080), frontend-dashboard (:8081)
-               --> Registers Debezium PostgreSQL connector & waits for RUNNING state
+    <div class="note tip">
+      <span class="label">Tiempo total estimado</span>
+      <p>El despliegue completo toma habitualmente entre <strong>1 y 2 minutos</strong> dependiendo de la latencia de red y aprovisionamiento en la nube.</p>
+    </div>
+  </section>
 
-3. [flink-up]  Deploys Flink SQL statements via Terraform (~15-20s)
-               --> Configures Primary Keys
-               --> Starts dml-customer-payment-stats (continuous aggregation)
-               --> Starts dml-loan-decisions (temporal join & scoring)
-      </div>
+  <!-- ===================== 11. EXPLORAR CONFLUENT CLOUD ===================== -->
+  <section id="confluent-ui">
+    <h2>11. Explorar Confluent Cloud</h2>
+    <p>Ingresá a la consola web de <a href="https://confluent.cloud" target="_blank" rel="noopener">Confluent Cloud</a> y seleccioná el entorno <code class="inline">banking-streaming-env</code>:</p>
 
-      <div class="callout tip">
-        <div class="callout-icon">⏱️</div>
-        <div class="callout-content">
-          <strong>Deployment Duration</strong>
-          The complete end-to-end deployment typically takes between <strong>1 and 2 minutes</strong> depending on network speed and cloud provisioning times.
-        </div>
-      </div>
-    </section>
+    <ol class="steps">
+      <li><strong>Topics:</strong> Verificá la presencia de los tópicos <code class="inline">customers</code> y <code class="inline">payment_history</code> (poblados por CDC desde PostgreSQL), <code class="inline">loan-requests</code> (solicitudes en formato Avro) y <code class="inline">loan-decisions</code> (decisiones generadas por Flink).</li>
+      <li><strong>Schema Registry:</strong> Inspeccioná el esquema registrado en el sujeto <code class="inline">loan-requests-value</code>, que valida tipos lógicos como <code class="inline">decimal(12,2)</code> y <code class="inline">timestamp-millis</code>.</li>
+      <li><strong>Flink:</strong> Hacé clic en la sección <strong>Flink</strong> de tu entorno para observar las sentencias persistentes en estado <em>Running</em>:
+        <ul>
+          <li><code class="inline">banking-streaming-dml-customer-payment-stats</code></li>
+          <li><code class="inline">banking-streaming-dml-loan-decisions</code></li>
+        </ul>
+      </li>
+    </ol>
+  </section>
 
-    <!-- Section 11 -->
-    <section id="sec-11" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">11</span>
-        <h2>Explore Confluent Cloud</h2>
-      </div>
-      <p>
-        Open the <a href="https://confluent.cloud" target="_blank" rel="noopener">Confluent Cloud Console</a> in your browser and select the environment named <code class="inline">banking-streaming-env</code>:
-      </p>
+  <!-- ===================== 12. ABRIR LAS APLICACIONES ===================== -->
+  <section id="apps">
+    <h2>12. Abrir las aplicaciones</h2>
+    <p>Abrí dos pestañas en tu navegador para interactuar con la plataforma:</p>
 
-      <h3>1. Topics</h3>
-      <p>Navigate to <strong>Topics</strong> to inspect the provisioned topics:</p>
-      <ul>
-        <li><code class="inline">customers</code>: Receives real-time CDC updates of customer profiles from PostgreSQL.</li>
-        <li><code class="inline">payment_history</code>: Receives real-time CDC payment transactions from PostgreSQL.</li>
-        <li><code class="inline">loan-requests</code>: Stream of loan applications encoded in Avro.</li>
-        <li><code class="inline">loan-decisions</code>: Output stream produced by Flink containing scoring results and decision rationale.</li>
-      </ul>
+    <ul>
+      <li><strong>UI de Solicitudes de Préstamo:</strong> <a href="http://127.0.0.1:8080" target="_blank">http://127.0.0.1:8080</a></li>
+      <li><strong>Dashboard Operacional en Tiempo Real:</strong> <a href="http://127.0.0.1:8081" target="_blank">http://127.0.0.1:8081</a></li>
+    </ul>
 
-      <h3>2. Schema Registry</h3>
-      <p>
-        Navigate to <strong>Schema Registry</strong> to view the registered subject <code class="inline">loan-requests-value</code> enforcing data contracts across producers and consumers.
-      </p>
+    <div class="note">
+      <span class="label">Separación de responsabilidades y latencia de decisión</span>
+      <p><strong>UI de Solicitudes (:8080):</strong> Su función es exclusivamente validar el formulario y confirmar la publicación del evento en Kafka respondiendo <code class="inline">202 Accepted</code>. No calcula ni muestra la decisión del crédito.</p>
+      <p><strong>Procesamiento en Flink:</strong> Flink procesa la solicitud mediante un <em>temporal join</em> contra el perfil del cliente y estadísticas de pago. En las pruebas del asset, la decisión se emite habitualmente en <strong>5 a 10 segundos</strong>.</p>
+      <p><strong>Optimización de particiones inactivas:</strong> Esta rapidez se logra configurando <code class="inline">sql.tables.scan.idle-timeout = '5 s'</code> en la sentencia <code class="inline">dml-loan-decisions</code>, lo que evita que las particiones sin tráfico detengan el avance del watermark del join.</p>
+      <p><strong>Dashboard (:8081):</strong> Consume las decisiones desde el tópico <code class="inline">loan-decisions</code> y actualiza métricas y gráficos en vivo.</p>
+    </div>
+  </section>
 
-      <h3>3. Stream Processing (Flink)</h3>
-      <p>
-        Click on <strong>Flink</strong> in your environment. You will see your Flink compute pool (<code class="inline">banking-streaming-pool</code>) running two continuous background statements:
-      </p>
-      <ul>
-        <li><code class="inline">banking-streaming-dml-customer-payment-stats</code></li>
-        <li><code class="inline">banking-streaming-dml-loan-decisions</code></li>
-      </ul>
-    </section>
+  <!-- ===================== 13. PROBAR CRÉDITO APROBADO ===================== -->
+  <section id="caso-aprobado">
+    <h2>13. Probar una solicitud APROBADA (APPROVED)</h2>
+    <p>Probaremos un cliente solvente precargado en el seed de la base de datos:</p>
 
-    <!-- Section 12 -->
-    <section id="sec-12" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">12</span>
-        <h2>Open the applications</h2>
-      </div>
-      <p>
-        Open two browser tabs side-by-side to interact with the system:
-      </p>
+    <h4>Perfil del Cliente: Ana Solvente (ID 1001)</h4>
+    <ul>
+      <li>Ingresos mensuales: $8.000,00 &bull; Deuda mensual: $500,00</li>
+      <li>Antigüedad laboral: 10 años (Segmento GOLD)</li>
+      <li>Historial de pagos: 12 pagos puntuales (0 retrasos, 0 impagos)</li>
+    </ul>
 
-      <div class="arch-grid">
-        <div class="arch-card">
-          <h4>📝 Loan Request UI</h4>
-          <p><a href="http://127.0.0.1:8080" target="_blank"><strong>http://127.0.0.1:8080</strong></a></p>
-          <p style="margin-top: 0.5rem; font-size: 0.85rem;">
-            Origination form. Submits loan applications into the <code class="inline">loan-requests</code> Kafka topic. <em>It does not calculate scores.</em>
-          </p>
-        </div>
-        <div class="arch-card">
-          <h4>📊 Real-Time Dashboard</h4>
-          <p><a href="http://127.0.0.1:8081" target="_blank"><strong>http://127.0.0.1:8081</strong></a></p>
-          <p style="margin-top: 0.5rem; font-size: 0.85rem;">
-            Operational monitoring. Consumes <code class="inline">loan-decisions</code> from Kafka and displays live KPIs, charts, and decisions.
-          </p>
-        </div>
-      </div>
+    <h4>Ingresar datos en http://127.0.0.1:8080</h4>
+    <table>
+      <thead>
+        <tr><th>Campo</th><th>Valor</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Customer ID</td><td><code>1001</code></td></tr>
+        <tr><td>Amount</td><td><code>10000.00</code></td></tr>
+        <tr><td>Term (Months)</td><td><code>24</code></td></tr>
+        <tr><td>Purpose</td><td><code>PERSONAL</code></td></tr>
+      </tbody>
+    </table>
 
-      <div class="callout info">
-        <div class="callout-icon">ℹ️</div>
-        <div class="callout-content">
-          <strong>Separation of Concerns &amp; Processing Latency</strong>
-          <br>
-          &bull; <strong>Origination UI (<code class="inline">:8080</code>):</strong> Only validates the form and confirms event submission (<code class="inline">202 Accepted</code>). It does not wait for, evaluate, or display loan decisions.
-          <br>
-          &bull; <strong>Decision Pipeline:</strong> Flink SQL computes decisions asynchronously and writes them to the <code class="inline">loan-decisions</code> topic. In final testing, decisions typically emerge in approximately <strong>5–10 seconds</strong>.
-          <br>
-          &bull; <strong>Idle Partitions Configuration:</strong> This responsive latency is enabled by setting <code class="inline">sql.tables.scan.idle-timeout = '5 s'</code> on the <code class="inline">dml-loan-decisions</code> Flink statement, ensuring that temporarily idle topic partitions do not stall the temporal join watermark. <em>(Exact latency may vary slightly depending on cloud network conditions).</em>
-          <br>
-          &bull; <strong>Live Dashboard (<code class="inline">:8081</code>):</strong> Displays the resulting decision and updates KPIs in real time as events arrive from Confluent Cloud.
-        </div>
-      </div>
-    </section>
+    <p>Hacé clic en <strong>Submit loan request</strong>. La UI confirmará el envío mostrando el ID generado. En pocos segundos, revisá el <strong>Dashboard</strong> (<a href="http://127.0.0.1:8081" target="_blank">http://127.0.0.1:8081</a>):</p>
 
-    <!-- Section 13 -->
-    <section id="sec-13" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">13</span>
-        <h2>Test an APPROVED loan</h2>
-      </div>
-      <p>
-        Let us test a credit-worthy customer from the PostgreSQL database seed:
-      </p>
-
-      <h3>Customer Profile: Ana Solvente (ID 1001)</h3>
-      <ul>
-        <li><strong>Monthly Income:</strong> $8,000.00 &bull; <strong>Monthly Debt:</strong> $500.00</li>
-        <li><strong>Employment History:</strong> 10 years (Gold segment)</li>
-        <li><strong>Payment History:</strong> 12 on-time monthly payments, 0 late payments, 0 defaults</li>
-      </ul>
-
-      <h3>Submit Request on http://127.0.0.1:8080</h3>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Field</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><strong>Customer ID</strong></td><td><code class="inline">1001</code></td></tr>
-            <tr><td><strong>Loan Amount</strong></td><td><code class="inline">10000.00</code></td></tr>
-            <tr><td><strong>Term (Months)</strong></td><td><code class="inline">24</code></td></tr>
-            <tr><td><strong>Purpose</strong></td><td><code class="inline">PERSONAL</code></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3>Expected Decision in Dashboard (:8081)</h3>
-      <div class="diagram-box">
-Decision:    APPROVED
+    <div class="code-label">Decisión en el Dashboard</div>
+    <pre class="out">Decision:    APPROVED
 Score:       100 / 100
 Reasons:     MEETS_CRITERIA
-Breakdown:   DTI Ratio 11.4% (40 pts) + Perfect History (30 pts) + 10y Emp (15 pts) + Amount Ratio (15 pts)
-      </div>
-    </section>
+Desglose:    DTI Ratio 11.4% (40 pts) + Sin retrasos (30 pts) + 10a Antigüedad (15 pts) + Ratio Importe (15 pts)</pre>
+  </section>
 
-    <!-- Section 14 -->
-    <section id="sec-14" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">14</span>
-        <h2>Test a REJECTED loan</h2>
-      </div>
-      <p>
-        Now test a high-risk customer profile:
-      </p>
+  <!-- ===================== 14. PROBAR CRÉDITO RECHAZADO ===================== -->
+  <section id="caso-rechazado">
+    <h2>14. Probar una solicitud RECHAZADA (REJECTED)</h2>
+    <p>Ahora probaremos un cliente con alto riesgo crediticio:</p>
 
-      <h3>Customer Profile: Bruno Moroso (ID 1002)</h3>
-      <ul>
-        <li><strong>Monthly Income:</strong> $2,200.00 &bull; <strong>Monthly Debt:</strong> $1,800.00</li>
-        <li><strong>Employment History:</strong> 1 year (Standard segment)</li>
-        <li><strong>Payment History:</strong> 3 historical defaults, 5 late payments</li>
-      </ul>
+    <h4>Perfil del Cliente: Bruno Moroso (ID 1002)</h4>
+    <ul>
+      <li>Ingresos mensuales: $2.200,00 &bull; Deuda mensual: $1.800,00</li>
+      <li>Antigüedad laboral: 1 año (Segmento STANDARD)</li>
+      <li>Historial de pagos: 3 impagos (DEFAULTED) y 5 retrasos (LATE)</li>
+    </ul>
 
-      <h3>Submit Request on http://127.0.0.1:8080</h3>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Field</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td><strong>Customer ID</strong></td><td><code class="inline">1002</code></td></tr>
-            <tr><td><strong>Loan Amount</strong></td><td><code class="inline">10000.00</code></td></tr>
-            <tr><td><strong>Term (Months)</strong></td><td><code class="inline">24</code></td></tr>
-            <tr><td><strong>Purpose</strong></td><td><code class="inline">PERSONAL</code></td></tr>
-          </tbody>
-        </table>
-      </div>
+    <h4>Ingresar datos en http://127.0.0.1:8080</h4>
+    <table>
+      <thead>
+        <tr><th>Campo</th><th>Valor</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Customer ID</td><td><code>1002</code></td></tr>
+        <tr><td>Amount</td><td><code>10000.00</code></td></tr>
+        <tr><td>Term (Months)</td><td><code>24</code></td></tr>
+        <tr><td>Purpose</td><td><code>PERSONAL</code></td></tr>
+      </tbody>
+    </table>
 
-      <h3>Expected Decision in Dashboard (:8081)</h3>
-      <div class="diagram-box">
-Decision:    REJECTED
+    <p>Hacé clic en <strong>Submit loan request</strong>. Observá el resultado en el Dashboard:</p>
+
+    <div class="code-label">Decisión en el Dashboard</div>
+    <pre class="out">Decision:    REJECTED
 Score:       20 / 100
 Reasons:     DTI_TOO_HIGH, PAST_DEFAULTS, FREQUENT_LATE_PAYMENTS, SCORE_BELOW_THRESHOLD
-Breakdown:   DTI Ratio 100.7% (0 pts) + Defaults (0 pts) + 1y Emp (5 pts) + Amount Ratio (15 pts)
-      </div>
+Desglose:    DTI Ratio 100.7% (0 pts) + Con impagos (0 pts) + 1a Antigüedad (5 pts) + Ratio Importe (15 pts)</pre>
 
-      <div class="callout tip">
-        <div class="callout-icon">💡</div>
-        <div class="callout-content">
-          <strong>Try a Non-existent Customer (ID 999999)</strong>
-          If you submit a loan for Customer ID <code class="inline">999999</code>, Flink's temporal join fails to find customer records, resulting in:
-          <br>
-          <span class="pill rejected">REJECTED</span> &bull; Score: <span class="pill score">0</span> &bull; Reasons: <code class="inline">CUSTOMER_NOT_FOUND</code>
-        </div>
-      </div>
-    </section>
+    <div class="note tip">
+      <span class="label">Prueba con un cliente inexistente (ID 999999)</span>
+      <p>Si enviás una solicitud con Customer ID <code>999999</code>, el temporal join de Flink no encontrará registro maestro y emitirá automáticamente: <span class="tag red">REJECTED</span> con Score <code>0</code> y motivo <code>CUSTOMER_NOT_FOUND</code>.</p>
+    </div>
+  </section>
 
-    <!-- Section 15 -->
-    <section id="sec-15" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">15</span>
-        <h2>Generate continuous traffic</h2>
-      </div>
-      <p>
-        To simulate realistic banking activity across multiple branches and mobile apps, start the background traffic producer:
-      </p>
+  <!-- ===================== 15. GENERAR TRÁFICO CONTINUO ===================== -->
+  <section id="demo-traffic">
+    <h2>15. Generar tráfico continuo</h2>
+    <p>Para simular el volumen continuo de un banco en producción, iniciá el generador de tráfico en segundo plano:</p>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span>bash</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code>make demo-traffic</code></pre>
-      </div>
+    <div class="code-label">Terminal</div>
+    <pre><code>make demo-traffic</code></pre>
 
-      <p>What this producer does:</p>
-      <ul>
-        <li>Runs containerized <code class="inline">producer-java</code> in continuous mode in the background.</li>
-        <li>Generates 1 valid loan request every 10 seconds (~6 requests/minute) across customers <code class="inline">1001</code> to <code class="inline">1050</code>.</li>
-        <li>Generates unique <code class="inline">request_id</code> UUIDs and serializes payloads according to the registered Avro schema.</li>
-      </ul>
+    <p>Este proceso automático:</p>
+    <ul>
+      <li>Ejecuta el contenedor <code class="inline">producer-java</code> en modo continuo.</li>
+      <li>Emite <strong>1 solicitud cada 10 segundos</strong> (~6 solicitudes/minuto) alternando entre los clientes 1001 a 1050 del seed.</li>
+      <li>Genera identificadores únicos <code class="inline">request_id</code> y valida los esquemas Avro en Schema Registry.</li>
+    </ul>
 
-      <p>When you wish to stop the traffic generator:</p>
-      <div class="code-block">
-        <div class="code-header">
-          <span>bash</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code>make demo-traffic-stop</code></pre>
-      </div>
-    </section>
+    <p>Observá cómo se actualizan simultáneamente los tópicos en Confluent Cloud, el procesamiento de Flink y los gráficos del Dashboard.</p>
 
-    <!-- Section 16 -->
-    <section id="sec-16" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">16</span>
-        <h2>Observe the dashboard</h2>
-      </div>
-      <p>
-        Return to the <strong>Real-Time Dashboard</strong> at <a href="http://127.0.0.1:8081" target="_blank"><strong>http://127.0.0.1:8081</strong></a> while traffic is flowing:
-      </p>
+    <p>Cuando desees detener el tráfico automático, ejecutá:</p>
 
-      <h3>1. Live KPIs</h3>
-      <ul>
-        <li><strong>Total Decisions:</strong> Count of all processed loan decisions.</li>
-        <li><strong>Approved vs. Rejected:</strong> Breakdown of outcomes.</li>
-        <li><strong>Approval Rate (%):</strong> Overall portfolio approval ratio.</li>
-        <li><strong>Average Score:</strong> Mean credit rating across all evaluations.</li>
-        <li><strong>Total Approved Amount:</strong> Cumulative currency volume granted.</li>
-      </ul>
+    <div class="code-label">Terminal</div>
+    <pre><code>make demo-traffic-stop</code></pre>
+  </section>
 
-      <h3>2. Real-Time Charts</h3>
-      <ul>
-        <li><strong>Decision Ratio Donut:</strong> Visual distribution of Approved vs Rejected applications.</li>
-        <li><strong>Score Distribution Histogram:</strong> Grouped into brackets (0-19, 20-39, 40-59, 60-79, 80-100).</li>
-        <li><strong>Decisions Table:</strong> Live updating feed of the latest 50 decisions with full audit reasons.</li>
-      </ul>
-    </section>
+  <!-- ===================== 16. OBSERVAR EL DASHBOARD ===================== -->
+  <section id="dashboard">
+    <h2>16. Observar el Dashboard</h2>
+    <p>En el Dashboard operacional (<a href="http://127.0.0.1:8081" target="_blank">http://127.0.0.1:8081</a>), analizá los indicadores calculados en streaming:</p>
 
-    <!-- Section 17 -->
-    <section id="sec-17" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">17</span>
-        <h2>What just happened?</h2>
-      </div>
-      <p>
-        Let us trace the complete path of an event through our automated architecture:
-      </p>
-      <ol style="margin-left: 1.5rem; color: var(--text-secondary); line-height: 1.8;">
-        <li><strong>Relational Baseline:</strong> PostgreSQL holds customer master data and historical payment logs.</li>
-        <li><strong>Change Data Capture:</strong> Debezium streams every row change into Confluent Cloud topics (<code class="inline">customers</code>, <code class="inline">payment_history</code>).</li>
-        <li><strong>Event Origination:</strong> A loan application is submitted via Web UI or Java Producer and written to <code class="inline">loan-requests</code>.</li>
-        <li><strong>Contract Governance:</strong> Schema Registry validates the message against the <code class="inline">loan-requests-value</code> Avro schema.</li>
-        <li><strong>Continuous Aggregation:</strong> Flink SQL maintains up-to-date aggregates of historical payments per customer.</li>
-        <li><strong>Temporal Join &amp; Scoring:</strong> Flink performs a temporal point-in-time join between the request, customer profile, and payment stats, executing the <strong>RULES_V1</strong> scoring engine.</li>
-        <li><strong>Decision Output:</strong> Flink writes the result to <code class="inline">loan-decisions</code> in Confluent Cloud.</li>
-        <li><strong>Real-Time Consumption:</strong> The React dashboard displays the resulting decision and updates portfolio KPIs.</li>
-        <li><strong>Declarative Orchestration:</strong> Terraform and Make provisioned and orchestrated this entire multi-tier system reproducibly in minutes.</li>
-      </ol>
-    </section>
+    <h4>KPIs en Tiempo Real</h4>
+    <ul>
+      <li><strong>Total decisions:</strong> Volumen acumulado de solicitudes procesadas.</li>
+      <li><strong>Approved vs Rejected:</strong> Conteo desglosado de aprobaciones y rechazos.</li>
+      <li><strong>Approval rate:</strong> Porcentaje de aprobación del portfolio crediticio.</li>
+      <li><strong>Average score:</strong> Puntuación crediticia media global.</li>
+      <li><strong>Total approved amount:</strong> Importe total de capital aprobado.</li>
+    </ul>
 
-    <!-- Section 18 -->
-    <section id="sec-18" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">18</span>
-        <h2>Clean up</h2>
-      </div>
-      <p>
-        When you have completed the laboratory, clean up all provisioned resources:
-      </p>
+    <h4>Visualizaciones y Auditoría</h4>
+    <ul>
+      <li><strong>Donut de Decisiones:</strong> Proporción visual de créditos aprobados y rechazados.</li>
+      <li><strong>Histograma de Scoring:</strong> Distribución de solicitudes en rangos (0-19, 20-39, 40-59, 60-79, 80-100).</li>
+      <li><strong>Tabla de Decisiones:</strong> Listado en vivo de las últimas 50 decisiones con timestamp exacto y motivos de evaluación.</li>
+    </ul>
+  </section>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span>bash</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code># 1. Stop background traffic (if running)
+  <!-- ===================== 17. QUÉ ACABA DE OCURRIR ===================== -->
+  <section id="resumen-flujo">
+    <h2>17. ¿Qué acaba de ocurrir?</h2>
+    <p>Repasemos la secuencia completa de datos a través de la arquitectura:</p>
+
+    <ol class="steps">
+      <li><strong>PostgreSQL</strong> proporcionó los datos maestros y transaccionales de clientes.</li>
+      <li><strong>Debezium CDC</strong> capturó los cambios de la base de datos fila por fila y los publicó en Kafka.</li>
+      <li><strong>Confluent Cloud</strong> transportó y almacenó los eventos en tópicos seguros y particionados.</li>
+      <li><strong>Schema Registry</strong> gobernó el contrato de datos mediante el esquema Avro de las solicitudes.</li>
+      <li><strong>Flink SQL</strong> mantuvo estadísticas acumuladas en streaming y ejecutó un <em>temporal join</em> al milisegundo.</li>
+      <li><strong>El motor de reglas</strong> evaluó la puntuación y escribió la decisión en el tópico <code class="inline">loan-decisions</code>.</li>
+      <li><strong>El Dashboard</strong> consumió las decisiones y actualizó los indicadores operacionales en tiempo real.</li>
+      <li><strong>Terraform y Make</strong> permitieron aprovisionar, ejecutar y gobernar toda esta arquitectura con reproducibilidad absoluta.</li>
+    </ol>
+  </section>
+
+  <!-- ===================== 18. LIMPIEZA DE RECURSOS ===================== -->
+  <section id="cleanup">
+    <h2>18. Limpieza de recursos</h2>
+    <p>Al concluir las pruebas del laboratorio, eliminá todos los recursos creados para evitar costes innecesarios:</p>
+
+    <div class="code-label">Terminal</div>
+    <pre><code># 1. Detener el tráfico de demo si sigue activo
 make demo-traffic-stop
 
-# 2. Teardown all local containers and delete all Confluent Cloud resources
+# 2. Destruir los contenedores locales y TODOS los recursos de Confluent Cloud
 make destroy</code></pre>
-      </div>
 
-      <div class="callout danger">
-        <div class="callout-icon">🚨</div>
-        <div class="callout-content">
-          <strong>Important: Avoid Unintended Cloud Costs</strong>
-          Running <code class="inline">make destroy</code> executes <code class="inline">scripts/down.sh all</code>, which stops and removes local containers, drops local volumes, tears down Flink SQL statements, and runs <code class="inline">terraform destroy</code> to remove the Kafka cluster, Schema Registry, service accounts, and environment in Confluent Cloud.
-        </div>
-      </div>
-    </section>
+    <div class="note danger">
+      <span class="label">Importante: Control de costes en la nube</span>
+      <p>El comando <code class="inline">make destroy</code> ejecuta <code class="inline">scripts/down.sh all</code>, que baja los contenedores locales, elimina los volúmenes de datos, destruye las sentencias de Flink y ejecuta <code class="inline">terraform destroy</code> para desaprovisionar el clúster Kafka, Schema Registry, service accounts y entorno en Confluent Cloud.</p>
+    </div>
+  </section>
 
-    <!-- Section 19 -->
-    <section id="sec-19" class="lab-section">
-      <div class="section-header">
-        <span class="section-badge">19</span>
-        <h2>Key takeaways</h2>
-      </div>
-      <ul>
-        <li><strong>UI and IaC are Complementary:</strong> The Confluent Cloud UI is ideal for visual exploration, while Terraform provides automated, version-controlled, auditable deployments.</li>
-        <li><strong>CDC Unlocks Legacy Databases:</strong> Debezium and Kafka Connect continuously stream operational data into Confluent without rewriting legacy applications.</li>
-        <li><strong>Temporal Joins in Flink:</strong> Flink SQL enables joining high-velocity transaction streams with changing reference tables as of the exact event time.</li>
-        <li><strong>Single Pipeline, Diverse Traffic:</strong> The same governed streaming architecture transparently supports manual web submissions and high-throughput automated producers.</li>
-        <li><strong>Deterministic Environments:</strong> With Make, Compose, and Terraform, spinning up and tearing down sophisticated event-driven applications is completely automated.</li>
-      </ul>
-    </section>
+  <!-- ===================== 19. CONCLUSIONES CLAVE ===================== -->
+  <section id="takeaways">
+    <h2>19. Conclusiones clave</h2>
+    <ul>
+      <li><strong>UI e IaC son complementarios:</strong> La interfaz gráfica de Confluent es excelente para exploración y prototipado rápido, mientras que IaC (Terraform) es el estándar indispensable para entornos productivos reproducibles y auditables.</li>
+      <li><strong>CDC conecta sistemas legados:</strong> Debezium y Kafka Connect permiten incorporar bases de datos relacionales al ecosistema de streaming en tiempo real sin modificar aplicaciones existentes.</li>
+      <li><strong>Temporal Joins con Flink SQL:</strong> Flink permite enriquecer flujos transaccionales de alta velocidad con tablas maestras cambiantes respetando el estado exacto en el tiempo del evento.</li>
+      <li><strong>Canal unificado:</strong> La misma arquitectura procesa de forma transparente tanto solicitudes manuales originadas desde la web como ráfagas continuas de sistemas automáticos.</li>
+      <li><strong>Ciclo de vida gobernado:</strong> El aprovisionamiento y destrucción total de la infraestructura se realiza en minutos mediante comandos estándar y código versionado.</li>
+    </ul>
+  </section>
 
-    <footer>
-      <p>Banking Real-Time Loan Decisions with Confluent &bull; Hands-On Lab &bull; Built with Infrastructure as Code</p>
-    </footer>
-
-  </main>
-</div>
+  <footer>
+    IBM &middot; Laboratorios Hands-On Confluent &middot; Apache Kafka® y Apache Flink® son marcas registradas de la Apache Software Foundation.
+  </footer>
+</main>
 
 <script>
-  // Copy to clipboard helper
-  function copyCode(btn) {
-    const pre = btn.parentElement.nextElementSibling;
-    const code = pre.textContent;
-    navigator.clipboard.writeText(code).then(() => {
-      const originalText = btn.textContent;
-      btn.textContent = 'Copied!';
-      btn.style.background = '#16a34a';
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.style.background = '';
-      }, 2000);
-    });
-  }
+(function () {
+  var copyIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M28 10v18H10V10h18m0-2H10a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2z"/><path d="M4 18H2V4a2 2 0 0 1 2-2h14v2H4z"/></svg>';
+  var checkIcon = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M13 24l-9-9 1.414-1.414L13 21.171 26.586 7.586 28 9 13 24z"/></svg>';
+  var failIcon  = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M24 9.4L22.6 8 16 14.6 9.4 8 8 9.4l6.6 6.6L8 22.6 9.4 24l6.6-6.6 6.6 6.6 1.4-1.4-6.6-6.6z"/></svg>';
 
-  // Active section scroll spy
-  window.addEventListener('DOMContentLoaded', () => {
-    const sections = document.querySelectorAll('section.lab-section');
-    const navItems = document.querySelectorAll('.nav-item');
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var wrap = document.createElement('div');
+    wrap.className = 'code-wrap';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
 
-    window.addEventListener('scroll', () => {
-      let current = '';
-      sections.forEach(section => {
-        const sectionTop = section.offsetTop - 100;
-        if (pageYOffset >= sectionTop) {
-          current = section.getAttribute('id');
-        }
+    if (pre.classList.contains('out')) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.innerHTML = copyIcon;
+    btn.title = 'Copiar';
+    btn.setAttribute('aria-label', 'Copiar el código al portapapeles');
+    wrap.appendChild(btn);
+
+    var timer;
+    btn.addEventListener('click', function () {
+      var text = pre.textContent;
+      var p;
+      if (navigator.clipboard && window.isSecureContext) {
+        p = navigator.clipboard.writeText(text);
+      } else {
+        p = new Promise(function (resolve, reject) {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          ok ? resolve() : reject();
+        });
+      }
+      p.then(function () {
+        btn.innerHTML = checkIcon; btn.classList.add('copied');
+      }, function () {
+        btn.innerHTML = failIcon; btn.classList.add('failed');
       });
-
-      navItems.forEach(item => {
-        item.classList.remove('active');
-        if (item.getAttribute('href') === `#${current}`) {
-          item.classList.add('active');
-        }
-      });
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        btn.innerHTML = copyIcon; btn.classList.remove('copied', 'failed');
+      }, 1800);
     });
   });
+
+  // Índice lateral activo durante scroll
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.sidenav a[href^="#"]'));
+  var targets = navLinks.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1));
+  });
+  var nav = document.querySelector('.sidenav');
+  var current = -1, ticking = false;
+
+  function updateActive() {
+    ticking = false;
+    var line = 48 + 32;
+    var idx = 0;
+    for (var i = 0; i < targets.length; i++) {
+      if (targets[i] && targets[i].getBoundingClientRect().top <= line) idx = i;
+    }
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) idx = targets.length - 1;
+    if (idx === current) return;
+    current = idx;
+    navLinks.forEach(function (a, i) { a.classList.toggle('active', i === idx); });
+    var a = navLinks[idx];
+    if (a && nav) {
+      if (a.offsetTop < nav.scrollTop + 40) nav.scrollTop = a.offsetTop - 40;
+      else if (a.offsetTop + a.offsetHeight > nav.scrollTop + nav.clientHeight - 40) nav.scrollTop = a.offsetTop + a.offsetHeight - nav.clientHeight + 40;
+    }
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(updateActive); } }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  updateActive();
+})();
 </script>
 </body>
 </html>
