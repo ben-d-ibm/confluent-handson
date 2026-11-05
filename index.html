@@ -50,13 +50,12 @@
     margin: 0 0 .75rem;
   }
   .lead {
-    font-size: 18px; color: var(--text-secondary); max-width: 46rem;
+    font-size: 18px; color: var(--text-secondary); max-width: 52rem;
     margin: 0 0 3.5rem;
   }
 
   /* Cards */
-  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); }
-  @media (max-width: 680px) { .cards { grid-template-columns: 1fr; } }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); }
 
   .card {
     background: var(--bg); padding: 2rem 2rem 2.5rem;
@@ -78,6 +77,7 @@
   }
   .dot-platform { background: #ff832b; }
   .dot-cloud    { background: #42be65; }
+  .dot-banking  { background: #0072ce; }
 
   .card h2 {
     font-size: 24px; font-weight: 400; line-height: 1.3; margin: 0;
@@ -116,7 +116,7 @@
 
 <main>
   <h1>Laboratorios Hands-On</h1>
-  <p class="lead">Dos variantes del mismo recorrido: una sobre <strong>Confluent Platform</strong> (entorno TechZone) y otra sobre <strong>Confluent Cloud</strong> (consola SaaS). Elegí la que corresponda a tu entorno.</p>
+  <p class="lead">Recorridos prácticos de Confluent: fundamentos con <strong>Confluent Platform</strong> (TechZone), gestión SaaS con <strong>Confluent Cloud</strong>, y arquitectura avanzada de streaming bancario con <strong>Infrastructure as Code</strong>.</p>
 
   <div class="cards">
 
@@ -145,6 +145,21 @@
         <span class="pill">Datagen</span>
         <span class="pill">Flink SQL</span>
         <span class="pill">Stream Lineage</span>
+      </div>
+      <svg class="card-arrow" viewBox="0 0 32 32" aria-hidden="true"><path d="M18 6 16.6 7.4 24.2 15H4v2h20.2l-7.6 7.6L18 26l10-10z"/></svg>
+    </a>
+
+    <!-- Card 3: Banking Streaming IaC -->
+    <a class="card" href="banking-streaming-lab.html">
+      <span class="card-badge"><span class="dot dot-banking"></span>IaC &amp; Streaming Bancario</span>
+      <h2>Banking Real-Time Decisions</h2>
+      <p>Caso end-to-end de decisión de préstamos en streaming desplegado con Terraform, Make, PostgreSQL, Debezium CDC, Confluent Cloud, Flink SQL y Web Apps.</p>
+      <div class="card-pills">
+        <span class="pill">Terraform</span>
+        <span class="pill">Debezium CDC</span>
+        <span class="pill">Flink SQL</span>
+        <span class="pill">Schema Registry</span>
+        <span class="pill">React Apps</span>
       </div>
       <svg class="card-arrow" viewBox="0 0 32 32" aria-hidden="true"><path d="M18 6 16.6 7.4 24.2 15H4v2h20.2l-7.6 7.6L18 26l10-10z"/></svg>
     </a>
