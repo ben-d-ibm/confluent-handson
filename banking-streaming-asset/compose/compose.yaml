@@ -1,0 +1,144 @@
+name: banking-streaming
+
+services:
+  postgres:
+    build:
+      context: ../postgres
+      dockerfile: Containerfile
+    image: localhost/banking/postgres:18
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      CDC_PASSWORD: ${CDC_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/pgsql/data
+    restart: unless-stopped
+
+  connect:
+    build:
+      context: ../connect
+      dockerfile: Containerfile
+    image: localhost/banking/connect-debezium:latest
+    depends_on:
+      - postgres
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-}
+      CONNECT_KAFKA_API_KEY: ${CONNECT_KAFKA_API_KEY:-}
+      CONNECT_KAFKA_API_SECRET: ${CONNECT_KAFKA_API_SECRET:-}
+      SCHEMA_REGISTRY_URL: ${SCHEMA_REGISTRY_URL:-}
+      CONNECT_SR_API_KEY: ${CONNECT_SR_API_KEY:-}
+      CONNECT_SR_API_SECRET: ${CONNECT_SR_API_SECRET:-}
+      CONNECT_GROUP_ID: ${CONNECT_GROUP_ID:-}
+      CONNECT_TOPIC_PREFIX: ${CONNECT_TOPIC_PREFIX:-}
+      CDC_PASSWORD: ${CDC_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${CONNECT_PORT:-8083}:8083"
+    restart: unless-stopped
+
+  # Frontend de solicitudes: un contenedor, un proceso (Express sirve React + API /api/loan-requests).
+  # Su única dependencia externa es Confluent Cloud, por eso no hay depends_on de postgres/connect.
+  # HOST=0.0.0.0 aplica SOLO dentro del namespace de red del contenedor; en el host el puerto se publica
+  # únicamente en loopback (127.0.0.1:8080).
+  frontend-requests:
+    build:
+      context: ..
+      dockerfile: frontend-requests/Dockerfile
+    image: localhost/loan-request-frontend:0.1.0
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8080"
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-}
+      SCHEMA_REGISTRY_URL: ${SCHEMA_REGISTRY_URL:-}
+      REQUESTS_API_KAFKA_API_KEY: ${REQUESTS_API_KAFKA_API_KEY:-}
+      REQUESTS_API_KAFKA_API_SECRET: ${REQUESTS_API_KAFKA_API_SECRET:-}
+      REQUESTS_API_SR_API_KEY: ${REQUESTS_API_SR_API_KEY:-}
+      REQUESTS_API_SR_API_SECRET: ${REQUESTS_API_SR_API_SECRET:-}
+      TOPIC_LOAN_REQUESTS: ${TOPIC_LOAN_REQUESTS:-loan-requests}
+    ports:
+      - "127.0.0.1:8080:8080"
+    # Solo comprueba que Express responde (/health); no toca Kafka, Schema Registry ni Flink.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health',{signal:AbortSignal.timeout(2000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Dashboard: un contenedor, un proceso (Express sirve React + API /api/* y consume loan-decisions).
+  # Su única dependencia externa es Confluent Cloud, por eso no hay depends_on. HOST=0.0.0.0 aplica SOLO
+  # dentro del contenedor; en el host el puerto se publica únicamente en loopback (127.0.0.1:8081).
+  frontend-dashboard:
+    build:
+      context: ..
+      dockerfile: frontend-dashboard/Dockerfile
+    image: localhost/loan-decision-dashboard:0.1.0
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8081"
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-}
+      SCHEMA_REGISTRY_URL: ${SCHEMA_REGISTRY_URL:-}
+      DASHBOARD_API_KAFKA_API_KEY: ${DASHBOARD_API_KAFKA_API_KEY:-}
+      DASHBOARD_API_KAFKA_API_SECRET: ${DASHBOARD_API_KAFKA_API_SECRET:-}
+      DASHBOARD_API_SR_API_KEY: ${DASHBOARD_API_SR_API_KEY:-}
+      DASHBOARD_API_SR_API_SECRET: ${DASHBOARD_API_SR_API_SECRET:-}
+      DASHBOARD_API_GROUP_PREFIX: ${DASHBOARD_API_GROUP_PREFIX:-}
+      TOPIC_LOAN_DECISIONS: ${TOPIC_LOAN_DECISIONS:-loan-decisions}
+    ports:
+      - "127.0.0.1:8081:8081"
+    # Solo comprueba que Express responde (/health); no toca Kafka ni Schema Registry.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081/health',{signal:AbortSignal.timeout(2000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Proceso finito (genera N solicitudes y termina): sin restart y fuera del `up` por defecto (profile).
+  # Publica directo a Confluent Cloud; no depende de postgres ni connect.
+  # Ejecución: <compose> -f compose/compose.yaml --env-file .env --env-file .env.runtime --profile producer run --rm producer-java [count] [intervalMs]
+  producer-java:
+    profiles: ["producer"]
+    build:
+      context: ..
+      dockerfile: producer-java/Dockerfile
+    image: localhost/loan-request-producer:0.1.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-}
+      PRODUCER_KAFKA_API_KEY: ${PRODUCER_KAFKA_API_KEY:-}
+      PRODUCER_KAFKA_API_SECRET: ${PRODUCER_KAFKA_API_SECRET:-}
+      SCHEMA_REGISTRY_URL: ${SCHEMA_REGISTRY_URL:-}
+      PRODUCER_SR_API_KEY: ${PRODUCER_SR_API_KEY:-}
+      PRODUCER_SR_API_SECRET: ${PRODUCER_SR_API_SECRET:-}
+      TOPIC_LOAN_REQUESTS: ${TOPIC_LOAN_REQUESTS:-loan-requests}
+      # Opcionales: solicitud fija (pruebas puntuales). Sin LOAN_CUSTOMER_ID se generan solicitudes aleatorias.
+      LOAN_CUSTOMER_ID: ${LOAN_CUSTOMER_ID:-}
+      LOAN_AMOUNT: ${LOAN_AMOUNT:-}
+      LOAN_TERM_MONTHS: ${LOAN_TERM_MONTHS:-}
+      LOAN_PURPOSE: ${LOAN_PURPOSE:-}
+    restart: "no"
+
+  # Tráfico de demo: mismo producer-java en modo continuo (1 solicitud cada DEMO_TRAFFIC_INTERVAL_SECONDS).
+  # Fuera del `up` por defecto (profile). Se controla con `make demo-traffic` / `make demo-traffic-stop`.
+  producer-demo-traffic:
+    profiles: ["demo-traffic"]
+    build:
+      context: ..
+      dockerfile: producer-java/Dockerfile
+    image: localhost/loan-request-producer:0.1.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-}
+      PRODUCER_KAFKA_API_KEY: ${PRODUCER_KAFKA_API_KEY:-}
+      PRODUCER_KAFKA_API_SECRET: ${PRODUCER_KAFKA_API_SECRET:-}
+      SCHEMA_REGISTRY_URL: ${SCHEMA_REGISTRY_URL:-}
+      PRODUCER_SR_API_KEY: ${PRODUCER_SR_API_KEY:-}
+      PRODUCER_SR_API_SECRET: ${PRODUCER_SR_API_SECRET:-}
+      TOPIC_LOAN_REQUESTS: ${TOPIC_LOAN_REQUESTS:-loan-requests}
+      DEMO_TRAFFIC: "true"
+      DEMO_TRAFFIC_INTERVAL_SECONDS: ${DEMO_TRAFFIC_INTERVAL_SECONDS:-10}
+    restart: "no"
+
+volumes:
+  pgdata:

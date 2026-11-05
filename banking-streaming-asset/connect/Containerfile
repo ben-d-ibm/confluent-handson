@@ -1,0 +1,48 @@
+# Kafka Connect (distribuido) + Debezium PostgreSQL + AvroConverter de Confluent.
+# Etapa 1: descarga y verifica artefactos (hashes fijados). Etapa 2: runtime Java sobre UBI, usuario no root.
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS fetch
+
+ARG KAFKA_VERSION=4.4.0
+ARG KAFKA_SHA512=f5ceba8a265ab6bb2d68362b1f6859a95e15d60ef92ba83b43fdf065b557dc18e98d6383c15b9977320e25b3a2c8b6f11decb17b0fa6c0f163423793a0eb95cb
+ARG DEBEZIUM_VERSION=3.7.0.Final
+ARG DEBEZIUM_SHA512=dc5334e087c7405f5b423e77373c60a89a3d7538ad38016f3959c431ad7078361ab95300a7e926c50621e7aa8375b7f4f3c5ecec4fe04ac484804d325009b6c0
+ARG AVRO_CONVERTER_VERSION=8.4.0
+ARG AVRO_CONVERTER_SHA256=c32a65d6175725ffd826ebfb1fe6a1a82f76401a33f0af343bf1a11be9e562de
+
+RUN microdnf -y install --nodocs --setopt=install_weak_deps=0 tar gzip unzip findutils \
+ && microdnf clean all
+WORKDIR /build
+
+# Espejo rápido (dlcdn) con respaldo en archive.apache.org; siempre con timeout y verificación de hash
+RUN set -eux; \
+    F="kafka_2.13-${KAFKA_VERSION}.tgz"; \
+    curl -fsS --retry 3 --connect-timeout 15 --max-time 240 -o "$F" "https://dlcdn.apache.org/kafka/${KAFKA_VERSION}/$F" \
+ || curl -fsS --retry 3 --connect-timeout 15 --max-time 600 -o "$F" "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/$F"; \
+    echo "${KAFKA_SHA512}  $F" | sha512sum -c -; \
+    mkdir /opt/kafka; tar -xzf "$F" -C /opt/kafka --strip-components=1; \
+    rm -rf /opt/kafka/site-docs /opt/kafka/bin/windows
+
+RUN set -eux; \
+    curl -fsS --retry 3 --connect-timeout 15 --max-time 120 -o dbz.tgz \
+      "https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/${DEBEZIUM_VERSION}/debezium-connector-postgres-${DEBEZIUM_VERSION}-plugin.tar.gz"; \
+    echo "${DEBEZIUM_SHA512}  dbz.tgz" | sha512sum -c -; \
+    mkdir -p /opt/connect-plugins; tar -xzf dbz.tgz -C /opt/connect-plugins
+
+RUN set -eux; \
+    curl -fsS --retry 3 --connect-timeout 15 --max-time 120 -o avro.zip \
+      "https://hub-downloads.confluent.io/api/plugins/confluentinc/kafka-connect-avro-converter/versions/${AVRO_CONVERTER_VERSION}/confluentinc-kafka-connect-avro-converter-${AVRO_CONVERTER_VERSION}.zip"; \
+    echo "${AVRO_CONVERTER_SHA256}  avro.zip" | sha256sum -c -; \
+    unzip -q avro.zip -d /opt/connect-plugins
+
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+
+USER 0
+COPY --from=fetch --chown=185:0 /opt/kafka /opt/kafka
+COPY --from=fetch --chown=185:0 /opt/connect-plugins /opt/connect-plugins
+COPY --chown=185:0 --chmod=0755 entrypoint.sh /opt/entrypoint.sh
+RUN chmod -R g=u /opt/kafka /opt/connect-plugins
+USER 185
+
+ENV KAFKA_HEAP_OPTS="-Xms256m -Xmx768m"
+EXPOSE 8083
+ENTRYPOINT ["/opt/entrypoint.sh"]

@@ -1,0 +1,65 @@
+-- Scoring de préstamos por rangos (modelo RULES_V1). Plantilla Terraform: los umbrales vienen de var.scoring.
+-- Una decisión por solicitud: temporal join con la versión de cliente y de estadísticas vigente al llegar la solicitud.
+-- Fechas/tipos CDC: ver flink-sql/SPIKE.md sección 5.
+--
+-- Puntos (máx. 100):
+--   DTI = (deuda mensual + cuota estimada) / ingresos, cuota = importe / plazo (sin intereses)
+--       <= ${dti_good}: 40 · <= ${dti_ok}: 25 · <= ${dti_max}: 10 · mayor: 0
+--   Historial: con impagos (> ${max_defaulted}) 0 · sin retrasos 30 · <= ${late_max} retrasos 20 · más 8
+--   Antigüedad laboral: >= ${emp_long} años 15 · >= ${emp_mid} 10 · >= ${emp_min} 5 · menos 0
+--   Importe / ingresos anuales: <= ${amt_low}: 15 · <= ${amt_high}: 8 · mayor 0
+-- APROBADA si puntos >= ${approve_threshold} y no hay impagos por encima de ${max_defaulted}. Cliente inexistente: RECHAZADA.
+INSERT INTO `loan-decisions`
+WITH enriched AS (
+  SELECT
+    l.request_id, l.customer_id, l.amount, l.term_months, l.purpose, l.requested_at,
+    c.customer_id                                     AS found_id,
+    c.employment_years                                AS employment_years,
+    COALESCE(p.late_payments, CAST(0 AS BIGINT))      AS late_payments,
+    COALESCE(p.defaulted_payments, CAST(0 AS BIGINT)) AS defaulted_payments,
+    CAST((c.monthly_debt + l.amount / NULLIF(l.term_months, 0)) / NULLIF(c.monthly_income, 0) AS DOUBLE) AS dti_ratio,
+    CAST(l.amount / NULLIF(c.monthly_income * 12, 0) AS DOUBLE)                                           AS amount_ratio
+  FROM `loan-requests` l
+  LEFT JOIN customers FOR SYSTEM_TIME AS OF l.`$rowtime` AS c ON l.customer_id = c.customer_id
+  LEFT JOIN customer_payment_stats FOR SYSTEM_TIME AS OF l.`$rowtime` AS p ON l.customer_id = p.customer_id
+),
+points AS (
+  SELECT *,
+    CASE WHEN dti_ratio IS NULL THEN 0 WHEN dti_ratio <= ${dti_good} THEN 40 WHEN dti_ratio <= ${dti_ok} THEN 25
+         WHEN dti_ratio <= ${dti_max} THEN 10 ELSE 0 END AS pts_dti,
+    CASE WHEN defaulted_payments > ${max_defaulted} THEN 0 WHEN late_payments = 0 THEN 30
+         WHEN late_payments <= ${late_max} THEN 20 ELSE 8 END AS pts_history,
+    CASE WHEN employment_years IS NULL THEN 0 WHEN employment_years >= ${emp_long} THEN 15
+         WHEN employment_years >= ${emp_mid} THEN 10 WHEN employment_years >= ${emp_min} THEN 5 ELSE 0 END AS pts_employment,
+    CASE WHEN amount_ratio IS NULL THEN 0 WHEN amount_ratio <= ${amt_low} THEN 15
+         WHEN amount_ratio <= ${amt_high} THEN 8 ELSE 0 END AS pts_amount
+  FROM enriched
+),
+scored AS (
+  SELECT *,
+    CASE WHEN found_id IS NULL THEN 0 ELSE pts_dti + pts_history + pts_employment + pts_amount END AS score
+  FROM points
+),
+decided AS (
+  SELECT *,
+    CASE WHEN found_id IS NOT NULL AND score >= ${approve_threshold} AND defaulted_payments <= ${max_defaulted}
+         THEN 'APPROVED' ELSE 'REJECTED' END AS decision,
+    CONCAT_WS(',',
+      CASE WHEN found_id IS NULL THEN 'CUSTOMER_NOT_FOUND' END,
+      CASE WHEN found_id IS NOT NULL AND (dti_ratio IS NULL OR dti_ratio > ${dti_max}) THEN 'DTI_TOO_HIGH' END,
+      CASE WHEN defaulted_payments > ${max_defaulted} THEN 'PAST_DEFAULTS' END,
+      CASE WHEN late_payments > ${late_max} THEN 'FREQUENT_LATE_PAYMENTS' END,
+      CASE WHEN found_id IS NOT NULL AND (amount_ratio IS NULL OR amount_ratio > ${amt_high}) THEN 'AMOUNT_TOO_HIGH' END,
+      CASE WHEN found_id IS NOT NULL AND employment_years < ${emp_min} THEN 'SHORT_EMPLOYMENT' END,
+      CASE WHEN found_id IS NOT NULL AND score < ${approve_threshold} THEN 'SCORE_BELOW_THRESHOLD' END
+    ) AS raw_reasons
+  FROM scored
+)
+SELECT
+  request_id, customer_id, amount, term_months, purpose, requested_at,
+  CURRENT_TIMESTAMP AS decided_at,
+  score, decision,
+  CASE WHEN raw_reasons = '' THEN 'MEETS_CRITERIA' ELSE raw_reasons END AS reasons,
+  dti_ratio,
+  '${model}' AS model
+FROM decided

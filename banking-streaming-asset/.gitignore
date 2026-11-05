@@ -1,0 +1,15 @@
+# Secretos y configuración local: NUNCA versionar
+.env
+.env.runtime
+*.tfvars
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Artefactos de build
+.terraform/
+node_modules/
+target/
+dist/
+*.log
+.DS_Store

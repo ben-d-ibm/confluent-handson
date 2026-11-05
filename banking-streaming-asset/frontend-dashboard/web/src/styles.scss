@@ -1,0 +1,85 @@
+@use '@carbon/react' with (
+  $font-path: '../../node_modules/@ibm/plex'
+);
+
+.page {
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: 4rem 1rem 3rem;
+}
+
+.page__title {
+  margin-bottom: 0.5rem;
+}
+
+.page__lead {
+  margin-bottom: 1.5rem;
+  color: var(--cds-text-secondary);
+}
+
+.state-message {
+  color: var(--cds-text-secondary);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.kpi {
+  min-height: 6rem;
+}
+
+.kpi__label {
+  color: var(--cds-text-secondary);
+  font-size: var(--cds-label-01-font-size, 0.75rem);
+}
+
+.kpi__value {
+  margin-top: 0.5rem;
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1.2;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.chart-panel {
+  padding: 1rem;
+  background: var(--cds-layer-01);
+}
+
+.section-title {
+  margin-bottom: 1rem;
+}
+
+.decisions__scroll {
+  overflow-x: auto;
+}
+
+.mono {
+  font-family: var(--cds-code-02-font-family, monospace);
+  font-size: 0.75rem;
+}
+
+.empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  background: var(--cds-layer-01);
+}
+
+.empty-state__title {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.empty-state__hint {
+  color: var(--cds-text-secondary);
+}

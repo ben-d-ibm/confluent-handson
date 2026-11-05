@@ -1,0 +1,15 @@
+# Allowlist: only what the Dockerfile needs. Excludes .env, .env.runtime, *.tfstate, Terraform credentials,
+# secrets, node_modules and web/dist from the host (both are rebuilt inside the image).
+*
+!frontend-dashboard/package.json
+!frontend-dashboard/package-lock.json
+!frontend-dashboard/vite.config.js
+!frontend-dashboard/src
+!frontend-dashboard/test
+!frontend-dashboard/web
+
+# Re-exclusions inside allowed directories (last matching rule wins).
+**/node_modules
+frontend-dashboard/web/dist
+**/.env*
+**/*.tfstate*

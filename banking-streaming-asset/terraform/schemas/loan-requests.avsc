@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "LoanRequest",
+  "namespace": "io.confluent.banking",
+  "doc": "Solicitud de préstamo de un cliente",
+  "fields": [
+    { "name": "request_id", "type": "string" },
+    { "name": "customer_id", "type": "int" },
+    {
+      "name": "amount",
+      "type": { "type": "bytes", "logicalType": "decimal", "precision": 12, "scale": 2 }
+    },
+    { "name": "term_months", "type": "int" },
+    { "name": "purpose", "type": "string" },
+    {
+      "name": "requested_at",
+      "type": { "type": "long", "logicalType": "timestamp-millis" }
+    }
+  ]
+}

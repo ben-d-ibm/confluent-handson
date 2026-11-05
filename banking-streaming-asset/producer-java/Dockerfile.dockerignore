@@ -1,0 +1,5 @@
+# Allowlist: only what the Dockerfile needs. Excludes target/, .env, .env.runtime, secrets, terraform state, etc.
+*
+!producer-java/pom.xml
+!producer-java/src
+!terraform/schemas/loan-requests.avsc

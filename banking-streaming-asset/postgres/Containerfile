@@ -1,0 +1,28 @@
+# PostgreSQL sobre UBI minimal (Red Hat no publica rhel9/postgresql en el registro anónimo).
+# Paquetes de PGDG (repositorio oficial de PostgreSQL). Usuario no root (uid 26).
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+
+ARG PG_MAJOR=18
+ENV PG_MAJOR=${PG_MAJOR} \
+    PGDATA=/var/lib/pgsql/data
+
+USER 0
+RUN ARCH="$(uname -m)" \
+ && curl -fsS --retry 3 --max-time 120 -o /tmp/pgdg.rpm \
+      "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-${ARCH}/pgdg-redhat-repo-latest.noarch.rpm" \
+ && rpm -ivh /tmp/pgdg.rpm \
+ && microdnf -y install --nodocs --setopt=install_weak_deps=0 \
+      "postgresql${PG_MAJOR}-server" glibc-langpack-en tzdata \
+ && microdnf clean all \
+ && rm -rf /tmp/pgdg.rpm /var/cache/yum /var/lib/pgsql/${PG_MAJOR} \
+ && test "$(id -u postgres)" = "26" \
+ && mkdir -p "${PGDATA}" /docker-init \
+ && chown -R 26:0 "${PGDATA}" \
+ && chmod 700 "${PGDATA}"
+
+COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=0644 init/ /docker-init/
+
+USER 26
+EXPOSE 5432
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
