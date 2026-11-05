@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Laboratorio Hands-On: Banking Real-Time Loan Decisions with Confluent</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
   /* ---------- Tokens estilo IBM Carbon (tema White) ---------- */
   :root {
@@ -165,6 +166,47 @@
   .tab-pane { display: none; max-width: 48rem; }
   .tab-pane.active { display: block; }
 
+  /* Diagrama Arquitectura */
+  .diagram-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    margin: 1.5rem 0 2rem;
+    max-width: 52rem;
+    overflow-x: auto;
+    border-radius: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .diagram-card .mermaid {
+    display: flex;
+    justify-content: center;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font-family: var(--font-sans);
+  }
+  .diagram-card .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .diagram-toggle {
+    margin-top: 1.25rem;
+    padding-top: .75rem;
+    border-top: 1px dashed var(--border);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .diagram-toggle summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--blue-60);
+    user-select: none;
+    margin-bottom: .75rem;
+  }
+  .diagram-toggle summary:hover {
+    color: var(--blue-70);
+  }
+
   /* Botón de acción Carbon */
   .btn-primary {
     display: inline-flex; align-items: center; gap: .75rem; background: var(--blue-60); color: #fff;
@@ -291,6 +333,64 @@
     <h2>3. Arquitectura</h2>
     <p>La solución integra bases de datos transaccionales, captura de cambios en tiempo real (CDC), streaming gobernado en Confluent Cloud, procesamiento continuo con Flink SQL y microservicios desacoplados:</p>
 
+    <!-- Diagrama Visual Interactivo con Mermaid -->
+    <div class="diagram-card">
+      <div class="mermaid">
+flowchart TD
+    subgraph LOCAL ["🖥️ ENTORNO LOCAL (Docker / Podman Compose)"]
+        direction TB
+        PG[("🐘 PostgreSQL 18<br/><b>customers & payment_history</b>")]
+        CONNECT["⚡ Debezium CDC<br/><i>(Kafka Connect :8083)</i>"]
+        UI["🌐 Loan Request UI<br/><i>(:8080)</i>"]
+        PROD["⚙️ Demo Producer<br/><i>(make demo-traffic)</i>"]
+        DASH["📊 Executive Dashboard<br/><i>(:8081)</i>"]
+    end
+
+    subgraph CLOUD ["☁️ CONFLUENT CLOUD"]
+        direction TB
+        subgraph KAFKA ["Apache Kafka Cluster & Schema Registry"]
+            T_CUST["📬 customers<br/><i>(CDC Topic)</i>"]
+            T_PAY["📬 payment_history<br/><i>(CDC Topic)</i>"]
+            T_REQ["📬 loan-requests<br/><i>(Avro Topic)</i>"]
+            T_DEC["📬 loan-decisions<br/><i>(Decisions Topic)</i>"]
+        end
+
+        subgraph FLINK ["Flink SQL Compute Pool"]
+            F_STATS["📈 stats_payment_history<br/><i>(Agregación continua)</i>"]
+            F_DEC["🧠 Engine: loan-decisions<br/><i>(Temporal Join + Scoring RULES_V1)</i>"]
+        end
+    end
+
+    PG -->|1. WAL Logs| CONNECT
+    CONNECT -->|2. Avro CDC Events| T_CUST
+    CONNECT -->|2. Avro CDC Events| T_PAY
+
+    UI -->|3a. HTTP POST &rarr; Avro Event| T_REQ
+    PROD -->|3b. Solicitud cada 10s| T_REQ
+
+    T_PAY -->|4. Stream| F_STATS
+    T_CUST -->|5. Perfil Maestro| F_DEC
+    F_STATS -->|5. Métricas Agregadas| F_DEC
+    T_REQ -->|5. Nueva Solicitud| F_DEC
+
+    F_DEC -->|6. APPROVED / REJECTED| T_DEC
+    T_DEC -->|7. SSE Stream / WebSocket| DASH
+
+    classDef localApp fill:#ffffff,stroke:#525252,stroke-width:1.5px,color:#161616;
+    classDef pgDb fill:#f4f4f4,stroke:#0f62fe,stroke-width:2px,color:#161616;
+    classDef kafkaTopic fill:#edf5ff,stroke:#0f62fe,stroke-width:1.5px,color:#0043ce;
+    classDef flinkEngine fill:#f3e8ff,stroke:#8a3ffc,stroke-width:2px,color:#491d8b;
+    classDef dashApp fill:#defbe6,stroke:#198038,stroke-width:2px,color:#0e431f;
+
+    class UI,PROD,CONNECT localApp;
+    class PG pgDb;
+    class T_CUST,T_PAY,T_REQ,T_DEC kafkaTopic;
+    class F_STATS,F_DEC flinkEngine;
+    class DASH dashApp;
+      </div>
+
+      <details class="diagram-toggle">
+        <summary>Ver diagrama esquemático en formato texto ASCII</summary>
 <pre class="out">PostgreSQL (Local)
   ├── customers (perfil maestro)
   └── payment_history (historial de pagos)
@@ -315,6 +415,8 @@ Demo Producer ───────   [Tópico: loan-decisions]
                                  ▼
                         Frontend Dashboard
                              (:8081)</pre>
+      </details>
+    </div>
 
     <h4>Rol de cada componente</h4>
     <ul>
@@ -876,6 +978,28 @@ make destroy</pre>
 
 <script>
 (function () {
+  // Inicialización de Mermaid
+  if (window.mermaid) {
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontSize: '13px',
+        primaryColor: '#edf5ff',
+        primaryTextColor: '#161616',
+        primaryBorderColor: '#0f62fe',
+        lineColor: '#525252',
+        secondaryColor: '#f4f4f4',
+        tertiaryColor: '#ffffff',
+        mainBkg: '#ffffff',
+        nodeBorder: '#0f62fe',
+        clusterBkg: '#f4f4f4',
+        clusterBorder: '#8d8d8d'
+      }
+    });
+  }
+
   // Tabs switcher para sistemas operativos
   var tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach(function (btn) {
