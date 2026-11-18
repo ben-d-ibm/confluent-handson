@@ -581,7 +581,8 @@ podman machine start
       <div class="code-label">Verificación rápida</div>
       <pre class="out">terraform version
 make -v
-podman info  # o docker info</pre>
+podman info  # o docker info
+podman-compose --version  # debe ser >= 1.1.0 (si usás Podman)</pre>
     </div>
 
     <!-- Tab 2: Windows -->
@@ -596,10 +597,14 @@ wsl --install -d Ubuntu</pre>
       <p>Una vez dentro de tu terminal de WSL2 (Ubuntu):</p>
       <div class="code-label">Terminal WSL2 Ubuntu</div>
       <pre># 1. Actualizar e instalar herramientas base
-sudo apt update && sudo apt install -y make curl jq openssl podman podman-compose
+sudo apt update && sudo apt install -y make curl jq openssl podman pipx
+
+# podman-compose >= 1.1.0 (el paquete apt trae 1.0.x y no soporta --profile)
+pipx install "podman-compose>=1.1.0"
+pipx ensurepath   # reabrí la terminal para que ~/.local/bin entre en el PATH
 
 # 2. Instalar Terraform (repositorio oficial HashiCorp)
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt update && sudo apt install -y terraform</pre>
 
@@ -620,17 +625,25 @@ winget install Git.Git</pre>
       <p><strong>Ubuntu / Debian:</strong></p>
       <div class="code-label">Terminal Ubuntu / Debian</div>
       <pre># 1. Herramientas base y Podman
-sudo apt update && sudo apt install -y make curl jq openssl podman podman-compose
+sudo apt update && sudo apt install -y make curl jq openssl podman pipx
+
+# podman-compose >= 1.1.0 (el paquete apt trae 1.0.x y no soporta --profile)
+pipx install "podman-compose>=1.1.0"
+pipx ensurepath   # reabrí la terminal para que ~/.local/bin entre en el PATH
 
 # 2. Terraform
-wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt update && sudo apt install -y terraform</pre>
 
       <p><strong>RHEL / Fedora / CentOS Stream:</strong></p>
       <div class="code-label">Terminal RHEL / Fedora</div>
       <pre># 1. Herramientas base y Podman
-sudo dnf install -y make curl jq openssl podman podman-compose
+sudo dnf install -y make curl jq openssl podman pipx
+
+# podman-compose >= 1.1.0 (el paquete del repositorio puede ser más antiguo)
+pipx install "podman-compose>=1.1.0"
+pipx ensurepath
 
 # 2. Terraform
 sudo dnf install -y dnf-plugins-core
@@ -641,6 +654,7 @@ sudo dnf install -y terraform</pre>
     <h4>Requisitos de Cuenta Confluent Cloud y Puertos</h4>
     <ul>
       <li><strong>Cuenta Confluent Cloud:</strong> API Key y Secret de tipo <em>Cloud Resource Management</em> creada desde <em>Confluent Cloud &gt; Menú superior derecho &gt; API keys &gt; Add API key &gt; Cloud resource management</em> (requiere rol OrganizationAdmin para crear entornos y service accounts).</li>
+      <li><strong>podman-compose &ge; 1.1.0:</strong> si usás Podman, versiones anteriores (por ejemplo 1.0.6, la del paquete <code>apt</code> de Ubuntu) no soportan <code>--profile</code> y <code>make demo-traffic</code> falla con <code>invalid choice: 'demo-traffic'</code>. Verificá con <code>podman-compose --version</code>.</li>
       <li><strong>Puertos locales libres:</strong> Comprobá que los puertos <code>5432</code> (Postgres), <code>8083</code> (Connect), <code>8080</code> (UI Solicitudes) y <code>8081</code> (Dashboard) no estén ocupados por otros servicios locales.</li>
     </ul>
 
