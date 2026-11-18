@@ -57,6 +57,26 @@ detect_compose() {
   return 1
 }
 
+# podman-compose < 1.1.0 no soporta --profile (lo usa `make demo-traffic`).
+PODMAN_COMPOSE_MIN="1.1.0"
+
+# Imprime la versión de podman-compose que usa el comando compose dado (vacío si no es podman-compose).
+podman_compose_version() {
+  # shellcheck disable=SC2086
+  ${1} version 2>&1 | sed -n 's/.*podman-compose version \([0-9][0-9.]*\).*/\1/p' | head -n1
+}
+
+# version_ge A B -> éxito si A >= B (comparación numérica por componentes, p. ej. 1.0.6 < 1.1.0).
+version_ge() {
+  local IFS=. i
+  local -a a=($1) b=($2)
+  for i in 0 1 2; do
+    (( ${a[i]:-0} > ${b[i]:-0} )) && return 0
+    (( ${a[i]:-0} < ${b[i]:-0} )) && return 1
+  done
+  return 0
+}
+
 is_port_free() {
   local port="$1"
   if command -v lsof >/dev/null 2>&1; then

@@ -68,6 +68,14 @@ if rt="$(detect_runtime)"; then
   fi
   if compose_cmd="$(detect_compose "${rt}")"; then
     ok "compose: ${compose_cmd}"
+    pc_ver="$(podman_compose_version "${compose_cmd}")"
+    if [[ -n "${pc_ver}" ]]; then
+      if version_ge "${pc_ver}" "${PODMAN_COMPOSE_MIN}"; then
+        ok "podman-compose ${pc_ver} (>= ${PODMAN_COMPOSE_MIN})"
+      else
+        check_fail "podman-compose ${pc_ver} no soporta --profile (necesario para 'make demo-traffic'): instala >= ${PODMAN_COMPOSE_MIN} (pipx install \"podman-compose>=${PODMAN_COMPOSE_MIN}\")"
+      fi
+    fi
   else
     check_fail "No se encontró compose para ${rt} (docker compose / podman compose / podman-compose)"
   fi
