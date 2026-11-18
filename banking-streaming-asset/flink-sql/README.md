@@ -2,9 +2,37 @@
 
 ## Flujo
 ```
-loan-requests ─┐                                        ┌─> loan-decisions
-customers (CDC) ─ temporal join ─> score por rangos ────┘
-payment_history (CDC) ─> customer_payment_stats ─ temporal join ┘
+┌─────────────────┐
+│  loan-requests  │
+└────────┬────────┘
+         │
+         ├──────────────────────────────────────────────────────┐
+         │                                                      │
+         │  ┌──────────────────┐                               │
+         │  │  customers (CDC) │                               │
+         │  └────────┬─────────┘                               │
+         │           │                                         │
+         │           │ temporal join                           │
+         │           │                                         │
+         │  ┌────────▼──────────────────┐                      │
+         │  │ payment_history (CDC)     │                      │
+         │  └────────┬──────────────────┘                      │
+         │           │                                         │
+         │           │ agregación continua                     │
+         │           │                                         │
+         │  ┌────────▼──────────────────┐                      │
+         │  │ customer_payment_stats    │                      │
+         │  └────────┬──────────────────┘                      │
+         │           │                                         │
+         │           │ temporal join                           │
+         └───────────┴─────────────────────────────────────────┤
+                     │                                         │
+                     │ scoring por rangos (RULES_V1)           │
+                     │                                         │
+                     ▼                                         │
+            ┌─────────────────┐                                │
+            │ loan-decisions  │◄───────────────────────────────┘
+            └─────────────────┘
 ```
 
 | Fichero | Qué hace |
