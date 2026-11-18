@@ -336,52 +336,48 @@
     <!-- Diagrama Visual Interactivo con Mermaid -->
     <div class="diagram-card">
       <div class="mermaid">
-flowchart TD
+flowchart LR
     subgraph LOCAL ["🖥️ ENTORNO LOCAL (Docker / Podman Compose)"]
-        direction TB
         PG[("🐘 PostgreSQL 18<br/><b>customers & payment_history</b>")]
         CONNECT["⚡ Debezium CDC<br/><i>(Kafka Connect :8083)</i>"]
         UI["🌐 Loan Request UI<br/><i>(:8080)</i>"]
         PROD["⚙️ Demo Producer<br/><i>(make demo-traffic)</i>"]
-        DASH["📊 Executive Dashboard<br/><i>(:8081)</i>"]
+        PG -->|"1. WAL"| CONNECT
     end
 
     subgraph CLOUD ["☁️ CONFLUENT CLOUD"]
-        direction TB
         subgraph KAFKA ["Apache Kafka Cluster & Schema Registry"]
             T_CUST["📬 customers<br/><i>(CDC Topic)</i>"]
             T_PAY["📬 payment_history<br/><i>(CDC Topic)</i>"]
             T_REQ["📬 loan-requests<br/><i>(Avro Topic)</i>"]
-            T_DEC["📬 loan-decisions<br/><i>(Decisions Topic)</i>"]
         end
-
         subgraph FLINK ["Flink SQL Compute Pool"]
             F_STATS["📈 stats_payment_history<br/><i>(Agregación continua)</i>"]
             F_DEC["🧠 Engine: loan-decisions<br/><i>(Temporal Join + Scoring RULES_V1)</i>"]
         end
+        T_DEC["📬 loan-decisions<br/><i>(Decisions Topic)</i>"]
     end
 
-    PG -->|1. WAL Logs| CONNECT
-    CONNECT -->|2. Avro CDC Events| T_CUST
-    CONNECT -->|2. Avro CDC Events| T_PAY
+    subgraph OUT ["🖥️ ENTORNO LOCAL"]
+        DASH["📊 Executive Dashboard<br/><i>(:8081)</i>"]
+    end
 
-    UI -->|3a. HTTP POST &rarr; Avro Event| T_REQ
-    PROD -->|3b. Solicitud cada 10s| T_REQ
-
-    T_PAY -->|4. Stream| F_STATS
-    T_CUST -->|5. Perfil Maestro| F_DEC
-    F_STATS -->|5. Métricas Agregadas| F_DEC
-    T_REQ -->|5. Nueva Solicitud| F_DEC
-
-    F_DEC -->|6. APPROVED / REJECTED| T_DEC
-    T_DEC -->|7. SSE Stream / WebSocket| DASH
+    CONNECT -->|"2. Avro CDC"| T_CUST
+    CONNECT -->|"2. Avro CDC"| T_PAY
+    UI -->|"3a. HTTP POST"| T_REQ
+    PROD -->|"3b. cada 10s"| T_REQ
+    T_PAY -->|"4. Stream"| F_STATS
+    F_STATS -->|"5. Métricas"| F_DEC
+    T_CUST -->|"5. Perfil"| F_DEC
+    T_REQ -->|"5. Solicitud"| F_DEC
+    F_DEC -->|"6. APPROVED / REJECTED"| T_DEC
+    T_DEC -->|"7. SSE / WebSocket"| DASH
 
     classDef localApp fill:#ffffff,stroke:#525252,stroke-width:1.5px,color:#161616;
     classDef pgDb fill:#f4f4f4,stroke:#0f62fe,stroke-width:2px,color:#161616;
     classDef kafkaTopic fill:#edf5ff,stroke:#0f62fe,stroke-width:1.5px,color:#0043ce;
     classDef flinkEngine fill:#f3e8ff,stroke:#8a3ffc,stroke-width:2px,color:#491d8b;
     classDef dashApp fill:#defbe6,stroke:#198038,stroke-width:2px,color:#0e431f;
-
     class UI,PROD,CONNECT localApp;
     class PG pgDb;
     class T_CUST,T_PAY,T_REQ,T_DEC kafkaTopic;
@@ -983,6 +979,7 @@ make destroy</pre>
     mermaid.initialize({
       startOnLoad: true,
       theme: 'base',
+      flowchart: { curve: 'linear', nodeSpacing: 50, rankSpacing: 60, htmlLabels: true },
       themeVariables: {
         fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         fontSize: '13px',
